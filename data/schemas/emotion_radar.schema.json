@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EmotionRadarResult",
+  "description": "Real-time emotion analysis for a single conversation turn",
+  "type": "object",
+  "required": ["turn_id", "speaker", "emotions", "timestamp"],
+  "properties": {
+    "turn_id": {"type": "string"},
+    "speaker": {"type": "string", "enum": ["user", "other"]},
+    "transcript_snippet": {"type": "string"},
+    "emotions": {
+      "type": "object",
+      "required": ["primary", "intensity", "tension_level"],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["anger", "fear", "sadness", "joy", "surprise", "disgust", "neutral", "frustration", "openness", "defensiveness"]
+        },
+        "intensity": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "tension_level": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "defensive": {"type": "boolean"},
+        "concession_made": {"type": "boolean"},
+        "escalation_risk": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+      }
+    },
+    "whisper_prompt": {
+      "type": ["string", "null"],
+      "description": "Real-time coaching tip. Null if no action needed."
+    },
+    "escalation_alert": {
+      "type": ["string", "null"],
+      "description": "De-escalation suggestion if risk is high. Null otherwise."
+    },
+    "timestamp": {"type": "string", "format": "date-time"}
+  }
+}

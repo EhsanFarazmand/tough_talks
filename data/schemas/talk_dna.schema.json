@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TalkDNA",
+  "description": "Personal communication pattern profile — accumulated across all conversations",
+  "type": "object",
+  "required": ["user_id", "version", "patterns", "strengths", "weaknesses", "updated_at"],
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Always 'local' for on-device — no account needed"
+    },
+    "version": {
+      "type": "integer",
+      "description": "Incremented every time Talk DNA is updated"
+    },
+    "conversation_count": {
+      "type": "integer",
+      "description": "Total conversations analyzed"
+    },
+    "patterns": {
+      "type": "object",
+      "properties": {
+        "filler_phrases": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Habitual filler phrases that signal uncertainty"
+        },
+        "apology_rate": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Fraction of turns containing unnecessary apologies"
+        },
+        "silence_under_pressure": {
+          "type": "boolean"
+        },
+        "sarcasm_frequency": {
+          "type": "string",
+          "enum": ["never", "rare", "low", "moderate", "high"]
+        },
+        "escalation_triggers": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Topics or phrases that tend to cause the user to escalate"
+        },
+        "avg_turn_length_words": {
+          "type": "number"
+        },
+        "interruption_rate": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "strengths": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "e.g. ['clear_problem_statement', 'listens_actively', 'good_pacing']"
+    },
+    "weaknesses": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "e.g. ['over_apologizes', 'hedges_before_vulnerable_statements']"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

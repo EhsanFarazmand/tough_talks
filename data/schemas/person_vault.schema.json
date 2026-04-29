@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonVault",
+  "description": "Behavioral profile of a recurring person in the user's life",
+  "type": "object",
+  "required": ["person_id", "name", "version", "profile", "conversation_count", "updated_at"],
+  "properties": {
+    "person_id": {
+      "type": "string",
+      "description": "Locally generated UUID — never synced"
+    },
+    "name": {
+      "type": "string",
+      "description": "How the user refers to this person (e.g. 'Mom', 'My manager Sarah')"
+    },
+    "relationship_type": {
+      "type": "string",
+      "enum": ["partner", "parent", "sibling", "friend", "manager", "report", "colleague", "other"]
+    },
+    "version": {"type": "integer"},
+    "conversation_count": {"type": "integer"},
+    "profile": {
+      "type": "object",
+      "properties": {
+        "communication_style": {
+          "type": "string",
+          "enum": ["direct", "indirect", "passive_aggressive", "avoidant", "collaborative", "dominant"]
+        },
+        "emotional_triggers": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Topics or behaviors that tend to escalate this person"
+        },
+        "de_escalation_keys": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "What tends to calm or open this person up"
+        },
+        "common_deflections": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "How this person typically avoids the issue"
+        },
+        "responds_best_to": {
+          "type": "string",
+          "description": "Free text description of what framing works best"
+        },
+        "cultural_context": {
+          "type": "string",
+          "description": "Optional cultural or professional context that affects communication norms"
+        }
+      }
+    },
+    "relationship_pulse": {
+      "type": "object",
+      "properties": {
+        "trend": {
+          "type": "string",
+          "enum": ["improving", "stable", "declining", "unknown"]
+        },
+        "unresolved_items": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "last_positive_exchange": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
