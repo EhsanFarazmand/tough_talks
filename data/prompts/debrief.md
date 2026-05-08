@@ -7,6 +7,7 @@ Analyze the transcript below and produce a debrief. Be specific and honest — v
 Rules:
 - "turn" is the 1-based index of the user's turns only (skip the other person's turns).
 - "better_line" must be a complete, ready-to-say sentence the user could deliver verbatim.
+- Match the language of the user's input (transcript + goal) for all natural-language string values. JSON keys always stay as specified. If the input language is unclear, default to English.
 - Output ONLY the JSON object. No preamble, no markdown fences, no trailing prose.
 
 Output JSON shape:

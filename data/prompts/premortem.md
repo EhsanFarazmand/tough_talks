@@ -9,6 +9,7 @@ Rules:
 - Exactly 3 scenarios. Numbered scenario_id 1, 2, 3.
 - Each "opening_move" must be a complete first line the opponent says, in their voice.
 - "destabilization_risk" reflects how badly this scenario would derail the user's stated goal.
+- Match the language of the user's input (conversation context) for all natural-language string values. JSON keys and enum codes (`resistance_type` values) always stay as specified. If the input language is unclear, default to English.
 - Output ONLY the JSON object. No preamble, no markdown fences, no trailing prose.
 
 Output JSON shape:

@@ -12,6 +12,7 @@ Rules:
 - "directness_level" reflects how directly people in this context typically state requests or disagreement.
 - "face_saving_required" is true if losing face publicly would derail the conversation.
 - Provide exactly 3 culturally calibrated opening lines, each ready for the user to say verbatim.
+- Match the language of the user's input (the context fields) for all natural-language string values, including the opening lines. JSON keys always stay as specified. If the input language is unclear, default to English.
 - Output ONLY the JSON object. No preamble, no markdown fences, no trailing prose.
 
 Output JSON shape:
