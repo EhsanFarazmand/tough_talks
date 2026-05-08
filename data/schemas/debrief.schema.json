@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Debrief",
+  "description": "Post-round analysis of a practice conversation.",
+  "type": "object",
+  "required": [
+    "ground_lost",
+    "over_apologies",
+    "missed_openings",
+    "wins",
+    "one_fix_next_time"
+  ],
+  "properties": {
+    "ground_lost": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn", "quote", "reason"],
+        "properties": {
+          "turn": {"type": "integer", "minimum": 1},
+          "quote": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "over_apologies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn", "quote"],
+        "properties": {
+          "turn": {"type": "integer", "minimum": 1},
+          "quote": {"type": "string"}
+        }
+      }
+    },
+    "missed_openings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn", "description", "better_line"],
+        "properties": {
+          "turn": {"type": "integer", "minimum": 1},
+          "description": {"type": "string"},
+          "better_line": {"type": "string"}
+        }
+      }
+    },
+    "wins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn", "description"],
+        "properties": {
+          "turn": {"type": "integer", "minimum": 1},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "one_fix_next_time": {
+      "type": "string",
+      "description": "Single most important thing to do differently next round."
+    }
+  }
+}

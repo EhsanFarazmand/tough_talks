@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CulturalCalibration",
+  "description": "Cross-cultural communication parameters for a conversation context.",
+  "type": "object",
+  "required": [
+    "context",
+    "communication_adjustments",
+    "simulation_instructions",
+    "opening_line_recommendations"
+  ],
+  "properties": {
+    "context": {
+      "type": "object",
+      "required": ["culture", "industry", "power_dynamic"],
+      "properties": {
+        "culture": {"type": "string"},
+        "industry": {"type": "string"},
+        "power_dynamic": {"type": "string"}
+      }
+    },
+    "communication_adjustments": {
+      "type": "object",
+      "required": [
+        "directness_level",
+        "silence_norm",
+        "face_saving_required",
+        "typical_refusal_style"
+      ],
+      "properties": {
+        "directness_level": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "0.0 very indirect, 1.0 very direct."
+        },
+        "silence_norm": {"type": "string"},
+        "face_saving_required": {"type": "boolean"},
+        "typical_refusal_style": {"type": "string"}
+      }
+    },
+    "simulation_instructions": {"type": "string"},
+    "opening_line_recommendations": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"type": "string"}
+    }
+  }
+}

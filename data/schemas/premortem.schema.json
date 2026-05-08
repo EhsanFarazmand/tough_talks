@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PreMortem",
+  "description": "Three failure scenarios for a difficult upcoming conversation.",
+  "type": "object",
+  "required": ["goal", "failure_scenarios"],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "description": "User's stated goal for the conversation, paraphrased."
+    },
+    "failure_scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "title",
+          "description",
+          "likely_trigger",
+          "destabilization_risk",
+          "simulation_parameters"
+        ],
+        "properties": {
+          "scenario_id": {"type": "integer", "minimum": 1, "maximum": 3},
+          "title": {"type": "string"},
+          "description": {"type": "string"},
+          "likely_trigger": {"type": "string"},
+          "destabilization_risk": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "simulation_parameters": {
+            "type": "object",
+            "required": ["resistance_type", "escalation_ceiling", "opening_move"],
+            "properties": {
+              "resistance_type": {
+                "type": "string",
+                "enum": ["deflect", "guilt_trip", "deny", "counter_attack", "silent", "concede"]
+              },
+              "escalation_ceiling": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              },
+              "opening_move": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

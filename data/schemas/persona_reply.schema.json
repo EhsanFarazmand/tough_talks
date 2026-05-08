@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PersonaReply",
+  "description": "One turn of an adversarial persona simulator's response.",
+  "type": "object",
+  "required": ["persona_name", "reply", "resistance_type", "escalation_level"],
+  "properties": {
+    "persona_name": {
+      "type": "string",
+      "description": "Name of the person being simulated."
+    },
+    "reply": {
+      "type": "string",
+      "description": "What the persona says, in their voice."
+    },
+    "resistance_type": {
+      "type": "string",
+      "enum": ["deflect", "guilt_trip", "deny", "counter_attack", "silent", "concede"]
+    },
+    "escalation_level": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "0.0 calm, 1.0 explosive."
+    }
+  }
+}

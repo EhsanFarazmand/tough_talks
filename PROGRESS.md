@@ -1,7 +1,7 @@
 # Implementation Progress
 
-Last updated: —  
-Current step: **Step 01 — Gemma 4 E2B Baseline**
+Last updated: 2026-05-08  
+Current step: **Step 02 — Prompt Engineering** (pending kickoff)
 
 ---
 
@@ -9,8 +9,8 @@ Current step: **Step 01 — Gemma 4 E2B Baseline**
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 01 | Gemma 4 E2B baseline + function calling | 🔵 Active | `notebooks/phase1/step01_gemma4_baseline.ipynb` | |
-| 02 | Prompt engineering for conversation intelligence | ⬜ Pending | `notebooks/phase1/step02_prompt_engineering.ipynb` | |
+| 01 | Gemma 4 E2B baseline + function calling | ✅ Done | `notebooks/phase1/step1_gemma4_baseline_function_calling.ipynb` | All 5 checks PASS on Colab; native `<\|tool_call>` protocol verified end-to-end |
+| 02 | Prompt engineering for conversation intelligence | ⬜ Pending | `notebooks/phase1/step2_prompt_engineering_conversation_intelligence.ipynb` | |
 
 ## Phase 2 — Audio & Emotion Layer
 
