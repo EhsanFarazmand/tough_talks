@@ -11,7 +11,7 @@ from pathlib import Path
 SCHEMAS_DIR = Path(__file__).parent.parent / "data" / "schemas"
 
 def validate_schemas():
-    schemas = list(SCHEMAS_DIR.glob("*.schema.json"))
+    schemas = sorted(SCHEMAS_DIR.rglob("*.schema.json"))
     if not schemas:
         print("No schemas found in data/schemas/")
         return
@@ -24,10 +24,11 @@ def validate_schemas():
             assert "$schema" in data, "Missing $schema"
             assert "title" in data, "Missing title"
             assert "type" in data, "Missing type"
-            print(f"  ✅  {schema_path.name}")
+            print(f"  ✅  {schema_path.relative_to(SCHEMAS_DIR)}")
         except (json.JSONDecodeError, AssertionError, Exception) as e:
-            errors.append(f"{schema_path.name}: {e}")
-            print(f"  ❌  {schema_path.name}: {e}")
+            rel = schema_path.relative_to(SCHEMAS_DIR)
+            errors.append(f"{rel}: {e}")
+            print(f"  ❌  {rel}: {e}")
 
     if errors:
         print(f"\n{len(errors)} schema(s) failed validation.")

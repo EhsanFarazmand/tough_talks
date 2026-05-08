@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tool: detect_talk_patterns",
+  "type": "object",
+  "name": "detect_talk_patterns",
+  "description": "Detect Talk DNA patterns (filler phrases, over-apology, hedging, sarcasm, silence signals) in a conversation transcript.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "transcript": {
+        "type": "string",
+        "description": "Full conversation transcript."
+      }
+    },
+    "required": ["transcript"]
+  }
+}

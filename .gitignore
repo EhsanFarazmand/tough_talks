@@ -113,3 +113,6 @@ docs/demo/raw_footage/
 *.csv
 *.parquet
 data/raw/
+
+# Claude Files
+CLAUDE.md

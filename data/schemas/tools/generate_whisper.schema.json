@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tool: generate_whisper",
+  "type": "object",
+  "name": "generate_whisper",
+  "description": "Generate a real-time coaching whisper for the user during a live conversation.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "conversation_so_far": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "List of recent utterances (newest last)."
+      },
+      "emotion_state": {
+        "type": "object",
+        "description": "Current emotion radar reading."
+      }
+    },
+    "required": ["conversation_so_far"]
+  }
+}

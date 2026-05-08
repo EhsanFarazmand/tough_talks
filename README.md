@@ -91,14 +91,14 @@ Phase 6 — Frontend Integration
 
 ```bash
 # 1. Clone
-git clone https://github.com/YOUR_USERNAME/tough-talks.git
+git clone https://github.com/EhsanFarazmand/tough-talks.git
 cd tough-talks
 
 # 2. Install backend deps
 pip install -r requirements.txt
 
 # 3. Run a notebook (Colab / Kaggle compatible)
-jupyter notebook notebooks/phase1/step01_gemma4_baseline.ipynb
+jupyter notebook notebooks/phase1/step1_gemma4_baseline_function_calling.ipynb
 
 # 4. Start FastAPI (Phase 5+)
 uvicorn backend.api.main:app --reload
@@ -133,7 +133,7 @@ uvicorn backend.api.main:app --reload
 
 | Layer | Technology |
 |-------|-----------|
-| Core model | Gemma 4 (E2B live, E4B whisper, 27B debrief) |
+| Core model | Gemma 4 E2B-it — single model for all tiers (5B params, any-to-any multimodal, ~11 GB RAM in bf16 on Kaggle) |
 | Transcription | Whisper / distil-whisper (on-device) |
 | Backend | FastAPI + Pydantic |
 | Storage | Local JSON (no database dependency) |
