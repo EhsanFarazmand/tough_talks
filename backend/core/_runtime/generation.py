@@ -11,7 +11,10 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import torch
+# torch is lazy-imported inside chat() so importing this module (or
+# backend.core._runtime) does not require a torch install. The
+# GenerationConfig dataclass and helpers above can be used in CI / unit
+# tests without the heavy ML stack present.
 
 LOG = logging.getLogger(__name__)
 
@@ -58,6 +61,8 @@ def chat(
     forwarded to ``apply_chat_template(tools=...)`` so the chat template
     emits Gemma 4's native tool declarations.
     """
+    import torch
+
     cfg = cfg or GenerationConfig()
 
     template_kwargs: dict[str, Any] = {

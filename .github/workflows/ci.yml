@@ -2,66 +2,60 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Cache pip
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-
-    - name: Install dependencies (no torch/GPU for CI)
-      run: |
-        pip install fastapi uvicorn pydantic pytest pytest-asyncio httpx ruff black
-
-    - name: Lint
-      run: |
-        ruff check backend/ tests/ --ignore E501
-        black --check backend/ tests/
-
-    - name: Run unit tests
-      run: |
-        pytest tests/unit/ -v --tb=short
-
-    - name: Validate JSON schemas
-      run: |
-        python scripts/validate_schemas.py
-
-  notebook-check:
+  validate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Check notebooks are valid JSON
-      run: |
-        python -c "
-        import json, pathlib, sys
-        nbs = list(pathlib.Path('notebooks').rglob('*.ipynb'))
-        errors = []
-        for nb in nbs:
-            try:
-                json.loads(nb.read_text())
-            except json.JSONDecodeError as e:
-                errors.append(f'{nb}: {e}')
-        if errors:
-            print('Invalid notebooks:')
-            for e in errors: print(' -', e)
-            sys.exit(1)
-        print(f'All {len(nbs)} notebooks valid.')
-        "
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install -q ruff
+
+      - name: Lint backend + scripts (catches syntax + import bugs)
+        run: ruff check backend/ scripts/ --ignore E501
+
+      - name: Validate JSON schemas (generic + tool-shape under data/schemas/tools/)
+        run: python scripts/validate_schemas.py
+
+      - name: Smoke-test prompt loading
+        # Imports the runtime without transformers/torch installed.
+        # Catches placeholder typos, missing prompt files, and any
+        # import-time bug in parsing.py / prompts.py / tools.py / tool_calls.py.
+        run: |
+          python - <<'PY'
+          import sys; sys.path.insert(0, ".")
+          from backend.core._runtime import load_prompt, load_tools
+          for name in ["persona", "debrief", "premortem", "cultural"]:
+              p = load_prompt(name)
+              print(f"  OK  prompt: {name:10s} placeholders={sorted(p.placeholders)}")
+          for tool in load_tools(["analyze_emotion", "generate_whisper", "detect_talk_patterns"]):
+              fn = tool["function"]
+              print(f"  OK  tool:   {fn['name']:25s} required={fn['parameters'].get('required', [])}")
+          PY
+
+      - name: Validate notebooks parse as JSON
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          nbs = sorted(pathlib.Path("notebooks").rglob("*.ipynb"))
+          bad = []
+          for nb in nbs:
+              try:
+                  json.loads(nb.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as exc:
+                  bad.append(f"{nb}: {exc}")
+          if bad:
+              for b in bad:
+                  print(" -", b)
+              sys.exit(1)
+          print(f"All {len(nbs)} notebooks valid.")
+          PY

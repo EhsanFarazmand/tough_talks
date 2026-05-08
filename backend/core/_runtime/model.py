@@ -20,7 +20,10 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
-from transformers import AutoProcessor
+# transformers is lazy-imported inside load_model() so importing this
+# module (or backend.core._runtime as a whole) does not pull in the heavy
+# ML stack. CI and lightweight notebooks can use parsing/prompts/tools/
+# tool_calls without installing transformers.
 
 LOG = logging.getLogger(__name__)
 
@@ -55,6 +58,8 @@ def load_model(cfg: Optional[LoadConfig] = None) -> Tuple[Any, Any]:
     ready for ``generation.chat()``. Raises whatever transformers raises
     on failure; no swallowing.
     """
+    from transformers import AutoProcessor
+
     cfg = cfg or LoadConfig()
     model_cls = _resolve_model_class(cfg.multimodal)
 
