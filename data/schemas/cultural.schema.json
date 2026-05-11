@@ -12,9 +12,12 @@
   "properties": {
     "context": {
       "type": "object",
-      "required": ["culture", "industry", "power_dynamic"],
+      "required": ["cultural_context", "industry", "power_dynamic"],
       "properties": {
-        "culture": {"type": "string"},
+        "cultural_context": {
+          "type": "string",
+          "description": "Rich free-text description of the working environment — beyond a country name. E.g. 'Japanese corporate, traditional Tokyo software firm'."
+        },
         "industry": {"type": "string"},
         "power_dynamic": {"type": "string"}
       }
