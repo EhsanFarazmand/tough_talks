@@ -14,8 +14,11 @@ protobuf>=4.25.0
 # --- Phase 2: Audio & transcription ---
 # Step 03 uses Gemma 4 E2B's native audio path — no separate ASR model.
 # librosa + soundfile back the AutoProcessor's audio feature extractor.
+# gTTS renders the in-notebook test argument clip so we don't redistribute
+# third-party audio (keeps the Kaggle submission license-clean).
 librosa>=0.10.1             # Audio feature extraction
 soundfile>=0.12.1           # Audio I/O
+gTTS>=2.5.0                 # MIT-licensed TTS for in-notebook test audio
 numpy>=1.26.0
 scipy>=1.12.0
 webrtcvad>=2.0.10           # Voice activity detection (live mode gating)

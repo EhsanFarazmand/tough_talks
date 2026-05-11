@@ -21,10 +21,13 @@ import json
 from pathlib import Path
 
 from backend.core._runtime.audio import (
+    DEFAULT_CHUNK_OVERLAP_SECONDS,
+    DEFAULT_CHUNK_SECONDS,
     DEFAULT_INSTRUCTION,
     MAX_AUDIO_SECONDS,
     _extract_text,
     build_transcription_messages,
+    compute_chunk_windows,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -82,3 +85,70 @@ def test_transcription_schema_no_extra_fields():
     """additionalProperties: false keeps the contract with the frontend tight."""
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     assert schema.get("additionalProperties") is False
+
+
+def test_transcription_schema_has_segments_field():
+    """Long-audio mode adds an optional segments array."""
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    assert "segments" in schema["properties"]
+    assert "segments" not in schema["required"]  # optional
+    seg = schema["properties"]["segments"]
+    assert seg["type"] == "array"
+    item = seg["items"]
+    assert set(item["required"]) == {"start_seconds", "end_seconds", "transcript"}
+
+
+def test_chunk_window_safety_margin():
+    """Default chunk size must stay under the hard 30 s Gemma 4 cap."""
+    assert DEFAULT_CHUNK_SECONDS < MAX_AUDIO_SECONDS
+
+
+def test_compute_chunks_short_clip_returns_one_window():
+    """Clips that already fit shouldn't be split."""
+    windows = compute_chunk_windows(10.0, max_chunk_seconds=28.0)
+    assert windows == [(0.0, 10.0)]
+
+
+def test_compute_chunks_exact_cap_returns_one_window():
+    """A clip equal to max_chunk_seconds is still one window."""
+    windows = compute_chunk_windows(28.0, max_chunk_seconds=28.0)
+    assert windows == [(0.0, 28.0)]
+
+
+def test_compute_chunks_covers_full_clip():
+    """The last window must end exactly at total_seconds — no audio lost."""
+    total = 42.0
+    windows = compute_chunk_windows(total, max_chunk_seconds=28.0, overlap_seconds=0.5)
+    assert len(windows) >= 2
+    assert windows[0][0] == 0.0
+    assert windows[-1][1] == total
+    for start, end in windows:
+        assert end - start <= 28.0 + 1e-9
+
+
+def test_compute_chunks_have_overlap():
+    """Consecutive windows should overlap by overlap_seconds."""
+    windows = compute_chunk_windows(60.0, max_chunk_seconds=28.0, overlap_seconds=0.5)
+    for prev, nxt in zip(windows, windows[1:]):
+        # next.start should be earlier than prev.end (overlap), but only when
+        # we're not on the final shortened window that just trims to total.
+        if nxt[1] < 60.0:
+            assert nxt[0] < prev[1]
+
+
+def test_compute_chunks_zero_duration():
+    """Defensive: zero-length audio returns no windows."""
+    assert compute_chunk_windows(0.0) == []
+
+
+def test_compute_chunks_rejects_oversized_overlap():
+    """Overlap >= chunk size would loop forever — must error early."""
+    import pytest
+
+    with pytest.raises(ValueError):
+        compute_chunk_windows(60.0, max_chunk_seconds=28.0, overlap_seconds=30.0)
+
+
+def test_default_chunk_overlap_is_smaller_than_chunk_size():
+    """Sanity check on the public default constants."""
+    assert 0.0 <= DEFAULT_CHUNK_OVERLAP_SECONDS < DEFAULT_CHUNK_SECONDS

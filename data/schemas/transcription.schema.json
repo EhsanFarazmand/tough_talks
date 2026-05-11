@@ -34,6 +34,20 @@
       "type": "string",
       "format": "date-time",
       "description": "UTC ISO-8601 timestamp when this transcription was produced."
+    },
+    "segments": {
+      "type": "array",
+      "description": "Per-chunk results when transcribe_long() splits a clip longer than Gemma 4's 30 s audio window. Omitted entirely for clips that fit in a single window.",
+      "items": {
+        "type": "object",
+        "required": ["start_seconds", "end_seconds", "transcript"],
+        "additionalProperties": false,
+        "properties": {
+          "start_seconds": {"type": "number", "minimum": 0},
+          "end_seconds": {"type": "number", "minimum": 0},
+          "transcript": {"type": "string"}
+        }
+      }
     }
   },
   "additionalProperties": false
