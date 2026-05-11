@@ -12,10 +12,10 @@ Conversation context:
 Your task: produce calibration parameters so the persona simulator and coaching layer accurately reflect how this conversation would actually unfold in this context.
 
 Rules:
+- **LANGUAGE (read this twice)**: Write every natural-language string value — INCLUDING the opening_line_recommendations — in the same language the user typed their input in. Cultural labels (e.g. "Japanese corporate") and loanwords (e.g. "senpai", "tatemae", "wa") describe the SETTING; they are NOT a signal to switch output language. Do NOT translate output into the cultural setting's native language. If the user wrote their input in English, every output string is in English — even if the conversation will eventually be conducted in Japanese, the user will translate the openings themselves. JSON keys stay as specified. If the input language is genuinely unclear, default to English.
 - "directness_level" reflects how directly people in this context typically state requests or disagreement.
 - "face_saving_required" is true if losing face publicly would derail the conversation.
-- Provide exactly 3 culturally calibrated opening lines, each ready for the user to say verbatim.
-- Match the language of the user's input (the context fields) for all natural-language string values, including the opening lines. JSON keys always stay as specified. If the input language is unclear, default to English.
+- Provide exactly 3 culturally calibrated opening lines, each ready for the user to say verbatim — culturally calibrated in *style* (formality, indirectness, face-saving), not in *language*.
 - Output ONLY the JSON object. No preamble, no markdown fences, no trailing prose.
 
 Output JSON shape:
