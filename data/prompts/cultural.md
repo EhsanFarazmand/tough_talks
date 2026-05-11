@@ -11,12 +11,28 @@ Conversation context:
 
 Your task: produce calibration parameters so the persona simulator and coaching layer accurately reflect how this conversation would actually unfold in this context.
 
-Rules:
-- **LANGUAGE (read this twice)**: Write every natural-language string value — INCLUDING the opening_line_recommendations — in the same language the user typed their input in. Cultural labels (e.g. "Japanese corporate") and loanwords (e.g. "senpai", "tatemae", "wa") describe the SETTING; they are NOT a signal to switch output language. Do NOT translate output into the cultural setting's native language. If the user wrote their input in English, every output string is in English — even if the conversation will eventually be conducted in Japanese, the user will translate the openings themselves. JSON keys stay as specified. If the input language is genuinely unclear, default to English.
+LANGUAGE RULE (non-negotiable):
+Detect the language the user wrote THEIR input in (cultural_context + conversation_goal + any user turns). Write EVERY natural-language string value in the output — including opening_line_recommendations — in that same language. The cultural_context describes the SETTING, not the output language. Loanwords like "senpai" or "tatemae" are English borrowings, not a signal that the input is in Japanese.
+
+Worked example to follow exactly (study this pattern before writing your output):
+
+  Input:
+    cultural_context = "Japanese corporate, traditional Tokyo software firm"
+    conversation_goal = "Push back on senpai's technical decision"
+  Output openings (in English — the input language — with Japanese formality baked into the style):
+    - "Sir, may I respectfully share a small concern about the approach we've committed to?"
+    - "I deeply appreciate your direction on this. I was hoping I might offer one alternative for your consideration if you have a moment."
+    - "I understand this decision has been communicated already. Would there be room for one technical observation?"
+
+Notice: the openings are deferential, indirect, and face-saving — culturally calibrated in *style* — but written in the user's input language (English). They are NOT translated into Japanese, even though the conversation will eventually happen in Japanese. The user will translate the lines themselves if needed.
+
+Other rules:
 - "directness_level" reflects how directly people in this context typically state requests or disagreement.
 - "face_saving_required" is true if losing face publicly would derail the conversation.
-- Provide exactly 3 culturally calibrated opening lines, each ready for the user to say verbatim — culturally calibrated in *style* (formality, indirectness, face-saving), not in *language*.
+- Provide exactly 3 opening lines, calibrated in style (formality, indirectness, face-saving) but in the user's input language.
 - Output ONLY the JSON object. No preamble, no markdown fences, no trailing prose.
+
+Final check before you respond: re-read each opening_line_recommendation. If any contains characters from a different writing system than the user's input (e.g. CJK characters when the user wrote in English), rewrite it in the user's input language while preserving the formality register.
 
 Output JSON shape:
 {
