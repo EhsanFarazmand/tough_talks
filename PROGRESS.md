@@ -1,7 +1,7 @@
 # Implementation Progress
 
-Last updated: 2026-05-08  
-Current step: **Step 02 — Prompt Engineering** (pending kickoff)
+Last updated: 2026-05-11  
+Current step: **Step 03 — Speech Transcription** (🔵 active, awaiting Colab validation)
 
 ---
 
@@ -10,13 +10,13 @@ Current step: **Step 02 — Prompt Engineering** (pending kickoff)
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
 | 01 | Gemma 4 E2B baseline + function calling | ✅ Done | `notebooks/phase1/step1_gemma4_baseline_function_calling.ipynb` | All 5 checks PASS on Colab; native `<\|tool_call>` protocol verified end-to-end |
-| 02 | Prompt engineering for conversation intelligence | ⬜ Pending | `notebooks/phase1/step2_prompt_engineering_conversation_intelligence.ipynb` | |
+| 02 | Prompt engineering for conversation intelligence | ✅ Done | `notebooks/phase1/step2_prompt_engineering_conversation_intelligence.ipynb` | Cultural calibration prompts/schemas finalized (see recent fix commits) |
 
 ## Phase 2 — Audio & Emotion Layer
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 03 | On-device speech transcription | ⬜ Pending | `notebooks/phase2/step03_whisper_transcription.ipynb` | |
+| 03 | On-device speech transcription | 🔵 Active | `notebooks/phase2/step03_gemma4_audio_transcription.ipynb` | Uses Gemma 4 E2B **native audio** (not Whisper). Helper in `backend/core/_runtime/audio.py`, schema in `data/schemas/transcription.schema.json`. Awaiting Colab run. |
 | 04 | Emotion & prosody analysis | ⬜ Pending | `notebooks/phase2/step04_emotion_radar.ipynb` | |
 
 ## Phase 3 — Core Intelligence Features

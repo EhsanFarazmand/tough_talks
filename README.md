@@ -62,7 +62,7 @@ Phase 1 — Model Access & Function Calling
   Step 02  Prompt engineering for conversation intelligence
 
 Phase 2 — Audio & Emotion Layer
-  Step 03  On-device speech transcription (Whisper / distil-whisper)
+  Step 03  On-device speech transcription (Gemma 4 E2B native audio)
   Step 04  Emotion & prosody analysis (Emotion Radar)
 
 Phase 3 — Core Intelligence Features
@@ -134,7 +134,7 @@ uvicorn backend.api.main:app --reload
 | Layer | Technology |
 |-------|-----------|
 | Core model | Gemma 4 E2B-it — single model for all tiers (5B params, any-to-any multimodal, ~11 GB RAM in bf16 on Kaggle) |
-| Transcription | Whisper / distil-whisper (on-device) |
+| Transcription | Gemma 4 E2B native audio (same model, no extra ASR — ≤ 30 s clips) |
 | Backend | FastAPI + Pydantic |
 | Storage | Local JSON (no database dependency) |
 | Frontend | HTML/CSS/JS → React |

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Transcription",
+  "description": "On-device speech-to-text output for a single audio clip. Emitted by backend.core._runtime.audio.transcribe(). Gemma 4 E2B audio supports clips up to 30s; longer clips must be chunked upstream.",
+  "type": "object",
+  "required": ["audio_source", "transcript", "model_id", "created_at"],
+  "properties": {
+    "audio_source": {
+      "type": "string",
+      "description": "Local path or http(s) URL that was passed to the processor. The raw audio is never stored here — only the reference."
+    },
+    "transcript": {
+      "type": "string",
+      "description": "The transcribed text in the audio's original language. Whitespace-trimmed; no trailing newlines."
+    },
+    "language": {
+      "type": ["string", "null"],
+      "description": "ISO 639-1 / BCP-47 code if known (e.g. 'en', 'fa'). Null when the caller did not declare and the model did not return a language tag."
+    },
+    "duration_seconds": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Clip length if measured by the caller. Null when unknown."
+    },
+    "model_id": {
+      "type": "string",
+      "description": "Hugging Face model id used for transcription (e.g. 'google/gemma-4-E2B-it')."
+    },
+    "instruction": {
+      "type": ["string", "null"],
+      "description": "The text instruction sent alongside the audio. Useful for debugging when output drifts."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp when this transcription was produced."
+    }
+  },
+  "additionalProperties": false
+}

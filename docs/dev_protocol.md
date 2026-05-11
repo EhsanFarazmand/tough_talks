@@ -50,7 +50,7 @@ Last cell — Structured output / validation (print JSON or assert shape)
 
 ```
 notebooks/phase1/step01_gemma4_baseline.ipynb
-notebooks/phase2/step03_whisper_transcription.ipynb
+notebooks/phase2/step03_gemma4_audio_transcription.ipynb
 ```
 
 Always use the global step number (01–15), not per-phase numbering.
@@ -89,7 +89,7 @@ Schemas live in `data/schemas/`. Every component must validate against its schem
 
 ```
 feature/step-01-gemma4-baseline
-feature/step-03-whisper-transcription
+feature/step-03-audio-transcription
 fix/step-05-talk-dna-pattern-edge-case
 ```
 

@@ -12,8 +12,8 @@ sentencepiece>=0.2.0
 protobuf>=4.25.0
 
 # --- Phase 2: Audio & transcription ---
-openai-whisper>=20231117
-# distil-whisper via transformers (no separate install needed)
+# Step 03 uses Gemma 4 E2B's native audio path — no separate ASR model.
+# librosa + soundfile back the AutoProcessor's audio feature extractor.
 librosa>=0.10.1             # Audio feature extraction
 soundfile>=0.12.1           # Audio I/O
 numpy>=1.26.0
