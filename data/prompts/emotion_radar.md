@@ -4,6 +4,9 @@ The speaker in this clip is the **$speaker**. The two possible speakers are:
 - `user` — the person being coached. `whisper_prompt` is written for them.
 - `other` — the counterparty. When the speaker is the other party, `whisper_prompt` MUST be null (never coach the other party).
 
+Recent conversation context (oldest first; use this to make `whisper_prompt` reflect the *arc*, not just this turn):
+$prior_context
+
 Use BOTH signals when scoring:
 - LINGUISTIC: words spoken (apologies, concessions, attacks, hedging, hard claims).
 - PROSODIC: tone, pace, volume, vocal tension, pauses, sigh/laugh markers.
@@ -30,6 +33,6 @@ Rules:
 - `defensive` is true when the speaker is guarding, deflecting blame, or minimising.
 - `concession_made` is true ONLY when the speaker explicitly yielded ground (acknowledged a mistake, agreed with the other party, gave up a position).
 - `escalation_risk` is the probability the next exchange goes worse, judged on tone AND content together.
-- `whisper_prompt` is null unless there is a concrete, actionable, fixable tip for the **user** right now. If the speaker is `other`, it is always null.
+- `whisper_prompt` is null unless there is a concrete, actionable, fixable tip for the **user** right now. Use the conversation context above so the tip reflects the arc (e.g. if tension has been building across turns, suggest a de-escalation move; if the user has been over-apologising, suggest a firmer frame). If the speaker is `other`, it is always null.
 - `escalation_alert` is null unless `escalation_risk` >= 0.6.
 - Match the language of the speaker for all natural-language string values. JSON keys and enum codes always stay as specified.

@@ -33,24 +33,40 @@ from .audio import (
     _extract_text,
     chunk_audio,
 )
-from .parsing import parse_json
+from .parsing import JsonParseError, parse_json
 from .prompts import load_prompt
 
 __all__ = [
     "ALLOWED_EMOTIONS",
     "ALLOWED_SPEAKERS",
     "DEFAULT_EMOTION_PROMPT_NAME",
+    "DEFAULT_PRIOR_CONTEXT_HISTORY",
     "EmotionAnalysisError",
     "EmotionConfig",
     "MAX_AUDIO_SECONDS",
     "analyze_emotion",
     "analyze_emotion_long",
     "build_emotion_messages",
+    "format_emotion_context",
 ]
 
 LOG = logging.getLogger(__name__)
 
 DEFAULT_EMOTION_PROMPT_NAME = "emotion_radar"
+
+# How many prior turns/chunks to summarise into ``cfg.prior_context``.
+# The model's whisper coaching benefits from arc context but the prompt
+# bloats fast if we dump everything — five is enough to capture an
+# escalating pattern without burning the context window.
+DEFAULT_PRIOR_CONTEXT_HISTORY = 5
+
+# Cap per-snippet length when rendering context — long transcripts don't
+# add signal proportional to their tokens.
+_CONTEXT_SNIPPET_MAX_CHARS = 200
+
+_NO_CONTEXT_PLACEHOLDER = (
+    "(none — this is the first turn or chunk in this conversation)"
+)
 
 ALLOWED_SPEAKERS: tuple[str, ...] = ("user", "other")
 
@@ -84,8 +100,16 @@ class EmotionConfig:
 
     Leave ``instruction`` as ``None`` to let the runtime load
     ``data/prompts/<prompt_name>.md`` and render it with the configured
-    ``speaker``. Pass an explicit ``instruction`` to skip the prompt
-    file (useful for ablation experiments).
+    ``speaker`` and ``prior_context``. Pass an explicit ``instruction``
+    to skip the prompt file (useful for ablation experiments).
+
+    ``prior_context`` is a rendered text block summarising earlier
+    EmotionRadarResults in the same conversation — used by the prompt
+    so the model's ``whisper_prompt`` reflects the conversational arc
+    rather than just the current turn. :func:`format_emotion_context`
+    is the canonical way to render it from a list of prior results;
+    :func:`analyze_emotion_long` threads it through automatically
+    across chunks.
     """
 
     max_new_tokens: int = 512
@@ -94,6 +118,7 @@ class EmotionConfig:
     turn_id: Optional[str] = None
     transcript_snippet: Optional[str] = None
     prompt_name: str = DEFAULT_EMOTION_PROMPT_NAME
+    prior_context: Optional[str] = None
 
 
 def build_emotion_messages(audio_source: str, instruction: str) -> list[dict]:
@@ -116,10 +141,65 @@ def build_emotion_messages(audio_source: str, instruction: str) -> list[dict]:
     ]
 
 
+def format_emotion_context(
+    prior_results: list[dict],
+    *,
+    max_history: int = DEFAULT_PRIOR_CONTEXT_HISTORY,
+) -> str:
+    """Render a brief text summary of prior EmotionRadarResults for use
+    as ``EmotionConfig.prior_context``.
+
+    The output is plain text, one line per turn/chunk with primary
+    emotion + key numerics + (truncated) transcript. ``max_history``
+    caps how many of the most recent results are included so the
+    prompt doesn't bloat on long conversations.
+
+    Returns a sentinel "no context" string when ``prior_results`` is
+    empty so the prompt template always has something concrete to
+    render (the caller never has to special-case "first turn").
+    """
+    if not prior_results:
+        return _NO_CONTEXT_PLACEHOLDER
+    recent = prior_results[-max_history:] if max_history > 0 else []
+    if not recent:
+        return _NO_CONTEXT_PLACEHOLDER
+    lines: list[str] = []
+    for i, r in enumerate(recent, start=1):
+        e = r.get("emotions") or {}
+        speaker = r.get("speaker", "?")
+        primary = e.get("primary", "?")
+        intensity = e.get("intensity", 0.0)
+        tension = e.get("tension_level", 0.0)
+        escalation = e.get("escalation_risk", 0.0)
+        defensive = e.get("defensive", False)
+        concession = e.get("concession_made", False)
+        flags = []
+        if defensive:
+            flags.append("defensive")
+        if concession:
+            flags.append("concession_made")
+        flag_str = f" [{', '.join(flags)}]" if flags else ""
+        lines.append(
+            f"  [{i}] [{speaker}] primary={primary} "
+            f"intensity={intensity:.2f} tension={tension:.2f} "
+            f"escalation_risk={escalation:.2f}{flag_str}"
+        )
+        snippet = r.get("transcript_snippet")
+        if isinstance(snippet, str) and snippet.strip():
+            clipped = snippet.strip()
+            if len(clipped) > _CONTEXT_SNIPPET_MAX_CHARS:
+                clipped = clipped[: _CONTEXT_SNIPPET_MAX_CHARS - 1].rstrip() + "…"
+            lines.append(f"      said: {clipped}")
+    return "\n".join(lines)
+
+
 def _resolve_instruction(cfg: EmotionConfig) -> str:
     if cfg.instruction is not None:
         return cfg.instruction
-    return load_prompt(cfg.prompt_name).render(speaker=cfg.speaker)
+    return load_prompt(cfg.prompt_name).render(
+        speaker=cfg.speaker,
+        prior_context=cfg.prior_context or _NO_CONTEXT_PLACEHOLDER,
+    )
 
 
 def _clamp_unit(name: str, value: Any) -> float:
@@ -182,6 +262,14 @@ def _coerce_emotion_payload(payload: Any, *, cfg: EmotionConfig) -> dict:
     if snippet is None:
         snippet = _opt_str(payload.get("transcript_snippet"))
 
+    whisper = _opt_str(payload.get("whisper_prompt"))
+    # Tough Talks policy: never coach the counterparty. The prompt asks
+    # the model to honour this but Step 04 Colab runs showed it still
+    # emitted whisper_prompt for `other` on ~half of turns — enforce here
+    # so the contract is reliable regardless of model behaviour.
+    if cfg.speaker == "other":
+        whisper = None
+
     result: dict[str, Any] = {
         "turn_id": cfg.turn_id or f"turn_{uuid.uuid4().hex[:12]}",
         "speaker": cfg.speaker,
@@ -193,13 +281,50 @@ def _coerce_emotion_payload(payload: Any, *, cfg: EmotionConfig) -> dict:
             "concession_made": concession,
             "escalation_risk": escalation,
         },
-        "whisper_prompt": _opt_str(payload.get("whisper_prompt")),
+        "whisper_prompt": whisper,
         "escalation_alert": _opt_str(payload.get("escalation_alert")),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     if snippet is not None:
         result["transcript_snippet"] = snippet
     return result
+
+
+# Light sampling for the retry path. Just enough randomness to nudge the
+# model off a single bad decoding trajectory without losing too much
+# determinism. Observed in Step 04 Colab runs: ~1/9 turns produced
+# unparseable output on pure greedy; this recovers them on retry.
+RETRY_SAMPLING: dict[str, Any] = {"temperature": 0.3, "top_p": 0.9, "top_k": 64}
+
+
+def _generate_emotion_payload(
+    processor: Any,
+    model: Any,
+    inputs: Any,
+    max_new_tokens: int,
+    sampling: Optional[dict] = None,
+) -> tuple[str, str]:
+    """Run one ``model.generate`` pass and return ``(raw, clean_text)``.
+
+    ``sampling`` is an optional dict of sampling kwargs (temperature,
+    top_p, top_k) — ``None`` means greedy. Kept as its own helper so the
+    retry loop in :func:`analyze_emotion` stays readable and so the
+    inference step can be swapped out in tests if we ever need to.
+    """
+    import torch
+
+    input_len = inputs["input_ids"].shape[-1]
+    gen_kwargs: dict[str, Any] = {"max_new_tokens": max_new_tokens}
+    if sampling is not None:
+        gen_kwargs["do_sample"] = True
+        gen_kwargs.update(sampling)
+
+    with torch.no_grad():
+        outputs = model.generate(**inputs, **gen_kwargs)
+
+    raw = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
+    clean = _extract_text(processor.parse_response(raw)).strip()
+    return raw, clean
 
 
 def analyze_emotion(
@@ -217,17 +342,23 @@ def analyze_emotion(
     :func:`backend.core._runtime.audio.transcribe` so the two phase-2
     components share an entry pattern.
 
-    Raises :class:`EmotionAnalysisError` if the model emits a payload
-    that doesn't match the schema's primary-emotion enum or numeric
-    ranges. Lets :class:`backend.core._runtime.parsing.JsonParseError`
-    propagate when the model output isn't JSON at all — that's a model
-    failure worth surfacing rather than swallowing.
+    Inference path is two-shot: greedy first (deterministic, fastest),
+    then a single retry with light sampling
+    (``RETRY_SAMPLING``: temperature 0.3, top_p 0.9, top_k 64) when the
+    greedy output fails to parse or fails schema validation. If both
+    attempts fail, raises :class:`EmotionAnalysisError` with an
+    ``attempts`` attribute carrying each attempt's raw output (truncated
+    to 500 chars) so the notebook can show the actual model output for
+    debugging.
     """
-    import torch
-
     cfg = cfg or EmotionConfig()
-    instruction = _resolve_instruction(cfg)
+    if cfg.speaker not in ALLOWED_SPEAKERS:
+        # Fail fast before any model call — retrying won't help here.
+        raise EmotionAnalysisError(
+            f"speaker must be one of {ALLOWED_SPEAKERS}, got {cfg.speaker!r}"
+        )
 
+    instruction = _resolve_instruction(cfg)
     messages = build_emotion_messages(audio_source, instruction)
     inputs = processor.apply_chat_template(
         messages,
@@ -237,15 +368,35 @@ def analyze_emotion(
         return_tensors="pt",
     ).to(model.device)
 
-    input_len = inputs["input_ids"].shape[-1]
-    with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=cfg.max_new_tokens)
+    attempts: list[dict] = []
+    for sampling in (None, RETRY_SAMPLING):
+        raw, text = _generate_emotion_payload(
+            processor, model, inputs, cfg.max_new_tokens, sampling
+        )
+        try:
+            payload = parse_json(text)
+            return _coerce_emotion_payload(payload, cfg=cfg)
+        except (JsonParseError, EmotionAnalysisError) as exc:
+            attempts.append(
+                {
+                    "sampling": "greedy" if sampling is None else "light",
+                    "error": str(exc),
+                    "raw_head": raw[:500],
+                }
+            )
+            LOG.warning(
+                "analyze_emotion attempt %d (%s) failed: %s",
+                len(attempts),
+                attempts[-1]["sampling"],
+                exc,
+            )
 
-    raw = processor.decode(outputs[0][input_len:], skip_special_tokens=False)
-    text = _extract_text(processor.parse_response(raw)).strip()
-
-    payload = parse_json(text)
-    return _coerce_emotion_payload(payload, cfg=cfg)
+    err = EmotionAnalysisError(
+        f"emotion analysis failed after {len(attempts)} attempts; "
+        f"last error: {attempts[-1]['error']}"
+    )
+    err.attempts = attempts  # type: ignore[attr-defined]
+    raise err
 
 
 def analyze_emotion_long(
@@ -256,6 +407,7 @@ def analyze_emotion_long(
     cfg: Optional[EmotionConfig] = None,
     max_chunk_seconds: float = DEFAULT_CHUNK_SECONDS,
     overlap_seconds: float = DEFAULT_CHUNK_OVERLAP_SECONDS,
+    max_prior_history: int = DEFAULT_PRIOR_CONTEXT_HISTORY,
 ) -> list[dict]:
     """Score a clip of arbitrary length by chunking past Gemma 4's 30 s
     audio cap.
@@ -264,10 +416,22 @@ def analyze_emotion_long(
     window. A clip that already fits in a single window still returns
     a one-element list so callers don't branch on length.
 
-    Chunk slicing is shared with the transcription path (``chunk_audio``
-    / ``compute_chunk_windows``). When ``cfg.turn_id`` is set, per-chunk
-    turn ids are derived as ``"<turn_id>_chunk_NNN"``; otherwise each
-    chunk gets a fresh uuid.
+    Chunks are processed **sequentially with rolling context**: each
+    chunk's prompt sees a summary of the previous chunks' emotion
+    readings and transcript snippets, so ``whisper_prompt`` and
+    ``escalation_alert`` reflect the conversational arc rather than
+    the single 28-second window in isolation. ``max_prior_history``
+    caps how many of the most recent prior chunks are summarised — five
+    by default, balancing arc visibility against prompt size. If the
+    caller supplies an explicit ``cfg.prior_context`` it is used as the
+    initial context (i.e. seed the chunked run from an existing
+    conversation history) instead of the default "no context yet"
+    sentinel.
+
+    Chunk slicing is shared with the transcription path
+    (``chunk_audio`` / ``compute_chunk_windows``). When ``cfg.turn_id``
+    is set, per-chunk turn ids are derived as ``"<turn_id>_chunk_NNN"``;
+    otherwise each chunk gets a fresh uuid.
     """
     import tempfile
     from pathlib import Path
@@ -290,6 +454,13 @@ def analyze_emotion_long(
         for i, (_start_s, _end_s, wave) in enumerate(chunks):
             chunk_path = Path(tmp) / f"chunk_{i:03d}.wav"
             sf.write(str(chunk_path), wave, 16000)
+            if i == 0 and cfg.prior_context is not None:
+                # Honour an explicit seed context on the very first chunk.
+                prior_context = cfg.prior_context
+            else:
+                prior_context = format_emotion_context(
+                    results, max_history=max_prior_history
+                )
             chunk_cfg = EmotionConfig(
                 max_new_tokens=cfg.max_new_tokens,
                 instruction=cfg.instruction,
@@ -299,6 +470,7 @@ def analyze_emotion_long(
                 ),
                 transcript_snippet=cfg.transcript_snippet,
                 prompt_name=cfg.prompt_name,
+                prior_context=prior_context,
             )
             results.append(
                 analyze_emotion(processor, model, chunk_path, cfg=chunk_cfg)

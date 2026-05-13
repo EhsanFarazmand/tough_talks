@@ -30,10 +30,13 @@ from backend.core._runtime.emotion import (
     ALLOWED_EMOTIONS,
     ALLOWED_SPEAKERS,
     DEFAULT_EMOTION_PROMPT_NAME,
+    DEFAULT_PRIOR_CONTEXT_HISTORY,
     EmotionAnalysisError,
     EmotionConfig,
+    RETRY_SAMPLING,
     _coerce_emotion_payload,
     build_emotion_messages,
+    format_emotion_context,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -161,6 +164,28 @@ def test_coerce_propagates_whisper_and_alert_strings():
     assert result["escalation_alert"].startswith("Take")
 
 
+def test_coerce_drops_whisper_when_speaker_is_other():
+    """Tough Talks policy: never coach the counterparty. Step 04 Colab
+    runs showed the model emits whisper_prompt for `other` despite the
+    prompt forbidding it, so the runtime enforces this in code."""
+    payload = _minimal_payload(
+        whisper_prompt="Acknowledge their feeling before defending.",
+        escalation_alert="Validate before re-engaging.",
+    )
+    result = _coerce_emotion_payload(payload, cfg=EmotionConfig(speaker="other"))
+    assert result["whisper_prompt"] is None
+    # escalation_alert is still relevant for `other` turns — it's an
+    # advisory to the user about the conversation state, not coaching for
+    # the counterparty — so it MUST survive the override.
+    assert result["escalation_alert"].startswith("Validate")
+
+
+def test_coerce_keeps_whisper_for_user_speaker():
+    payload = _minimal_payload(whisper_prompt="Hold your ground on the number.")
+    result = _coerce_emotion_payload(payload, cfg=EmotionConfig(speaker="user"))
+    assert result["whisper_prompt"] == "Hold your ground on the number."
+
+
 def test_coerce_empty_strings_become_null():
     """Coaching strings that come back as empty/whitespace mean 'nothing
     to say' — we normalise those to null to match the schema's intent."""
@@ -255,10 +280,172 @@ def test_emotion_radar_schema_required_fields():
         assert field in schema["required"], f"{field!r} must be required"
 
 
-def test_emotion_radar_prompt_exists_with_speaker_placeholder():
-    """The default prompt file must exist and accept exactly one
-    placeholder — ``$speaker`` — so the runtime can render it without
-    having to pass other inputs the chat doesn't know."""
+def test_emotion_radar_prompt_has_speaker_and_context_placeholders():
+    """The default prompt file must exist and accept exactly the two
+    placeholders the runtime renders: ``$speaker`` (whose voice this is)
+    and ``$prior_context`` (rolling summary of earlier turns). Drift
+    here breaks ``Prompt.render`` because it strictly checks both
+    missing and extra placeholders."""
     assert PROMPT_PATH.is_file(), f"missing prompt: {PROMPT_PATH}"
     text = PROMPT_PATH.read_text(encoding="utf-8")
     assert "$speaker" in text
+    assert "$prior_context" in text
+
+
+# ---- retry-sampling configuration ---------------------------------------
+
+
+def test_retry_sampling_is_low_variance():
+    """The retry path uses light sampling — just enough to escape a single
+    bad greedy trajectory. If these get bumped too high we lose the
+    determinism advantage entirely; pin sane defaults."""
+    assert RETRY_SAMPLING["temperature"] <= 0.5
+    assert 0.5 < RETRY_SAMPLING["top_p"] <= 1.0
+    assert RETRY_SAMPLING["top_k"] >= 1
+
+
+# ---- format_emotion_context (rolling-context renderer) -------------------
+
+
+def _sample_result(
+    turn_id="turn_01",
+    speaker="user",
+    primary="frustration",
+    intensity=0.7,
+    tension=0.6,
+    escalation=0.5,
+    defensive=False,
+    concession=False,
+    snippet="I asked for the report on Monday and it's already Thursday.",
+):
+    return {
+        "turn_id": turn_id,
+        "speaker": speaker,
+        "emotions": {
+            "primary": primary,
+            "intensity": intensity,
+            "tension_level": tension,
+            "escalation_risk": escalation,
+            "defensive": defensive,
+            "concession_made": concession,
+        },
+        "transcript_snippet": snippet,
+    }
+
+
+def test_format_emotion_context_empty_returns_sentinel():
+    """First turn / chunk has no history — caller never has to special-
+    case this; we render a deterministic placeholder string instead."""
+    text = format_emotion_context([])
+    assert "first" in text.lower()
+    assert "$" not in text  # never accidentally render a Template token
+
+
+def test_format_emotion_context_includes_primary_and_speaker():
+    text = format_emotion_context([_sample_result(primary="anger", speaker="user")])
+    assert "anger" in text
+    assert "user" in text
+
+
+def test_format_emotion_context_includes_numerics():
+    text = format_emotion_context(
+        [_sample_result(intensity=0.85, tension=0.9, escalation=0.75)]
+    )
+    assert "0.85" in text
+    assert "0.90" in text
+    assert "0.75" in text
+
+
+def test_format_emotion_context_marks_defensive_and_concession_flags():
+    text = format_emotion_context(
+        [_sample_result(defensive=True, concession=True)]
+    )
+    assert "defensive" in text
+    assert "concession_made" in text
+
+
+def test_format_emotion_context_omits_flags_when_false():
+    text = format_emotion_context(
+        [_sample_result(defensive=False, concession=False)]
+    )
+    assert "defensive" not in text
+    assert "concession_made" not in text
+
+
+def test_format_emotion_context_includes_snippet_when_present():
+    text = format_emotion_context([_sample_result(snippet="hello world")])
+    assert "hello world" in text
+
+
+def test_format_emotion_context_omits_snippet_line_when_empty():
+    text = format_emotion_context([_sample_result(snippet="")])
+    assert "said:" not in text
+
+
+def test_format_emotion_context_truncates_long_snippets():
+    """Long transcripts don't add signal proportional to their tokens —
+    the renderer caps each snippet so a multi-turn context doesn't blow
+    out the prompt budget."""
+    long = "a" * 1000
+    text = format_emotion_context([_sample_result(snippet=long)])
+    # The renderer keeps a margin of ~200 chars per snippet plus a
+    # trailing ellipsis; verify it truncated and didn't paste the whole
+    # 1000-char string.
+    assert "aaa" in text
+    assert long not in text
+    assert "…" in text
+
+
+def test_format_emotion_context_respects_max_history():
+    """Only the most-recent ``max_history`` results should appear, in
+    oldest-first order — older turns drop off when the buffer is full."""
+    results = [
+        _sample_result(turn_id=f"turn_{i:02d}", primary=p)
+        for i, p in enumerate(
+            ["anger", "fear", "sadness", "joy", "frustration", "neutral"], start=1
+        )
+    ]
+    text = format_emotion_context(results, max_history=3)
+    # Last three: joy / frustration / neutral — should all be present.
+    assert "joy" in text
+    assert "frustration" in text
+    assert "neutral" in text
+    # Earliest two should NOT be in the rendered window.
+    assert "anger" not in text
+    assert "fear" not in text
+
+
+def test_format_emotion_context_zero_history_returns_sentinel():
+    """max_history=0 means "don't include any context" — same observable
+    behaviour as an empty list."""
+    text = format_emotion_context(
+        [_sample_result()], max_history=0
+    )
+    assert "first" in text.lower()
+
+
+def test_default_prior_context_history_is_reasonable():
+    """If this changes we want a deliberate decision, not silent drift."""
+    assert 1 <= DEFAULT_PRIOR_CONTEXT_HISTORY <= 10
+
+
+def test_format_emotion_context_handles_missing_fields_gracefully():
+    """Defensive: external callers might pass dicts that don't quite
+    match the full schema (e.g. an early prototype). The renderer
+    should fall back to sensible defaults rather than crash."""
+    sparse = {"speaker": "user", "emotions": {"primary": "neutral"}}
+    text = format_emotion_context([sparse])
+    assert "neutral" in text
+    assert "user" in text
+
+
+# ---- prior_context wiring through _coerce_emotion_payload ----------------
+
+
+def test_coerce_payload_does_not_leak_prior_context_into_result():
+    """``prior_context`` is an input to the prompt, never an output field
+    on the EmotionRadarResult. Make sure adding it to the cfg doesn't
+    accidentally appear in the returned dict."""
+    cfg = EmotionConfig(speaker="user", prior_context="some prior summary")
+    result = _coerce_emotion_payload(_minimal_payload(), cfg=cfg)
+    assert "prior_context" not in result

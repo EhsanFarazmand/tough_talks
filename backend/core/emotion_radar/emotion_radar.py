@@ -18,6 +18,7 @@ from backend.core._runtime.emotion import (
     EmotionConfig,
     analyze_emotion,
     analyze_emotion_long,
+    format_emotion_context,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "EmotionConfig",
     "analyze_emotion",
     "analyze_emotion_long",
+    "format_emotion_context",
 ]

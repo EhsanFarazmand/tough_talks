@@ -20,11 +20,13 @@ from .emotion import (
     ALLOWED_EMOTIONS,
     ALLOWED_SPEAKERS,
     DEFAULT_EMOTION_PROMPT_NAME,
+    DEFAULT_PRIOR_CONTEXT_HISTORY,
     EmotionAnalysisError,
     EmotionConfig,
     analyze_emotion,
     analyze_emotion_long,
     build_emotion_messages,
+    format_emotion_context,
 )
 from .generation import GenerationConfig, chat
 from .model import DEFAULT_MODEL_ID, LoadConfig, load_model
@@ -40,6 +42,7 @@ __all__ = [
     "DEFAULT_CHUNK_SECONDS",
     "DEFAULT_EMOTION_PROMPT_NAME",
     "DEFAULT_MODEL_ID",
+    "DEFAULT_PRIOR_CONTEXT_HISTORY",
     "DEFAULT_TRANSCRIPTION_INSTRUCTION",
     "EmotionAnalysisError",
     "EmotionConfig",
@@ -59,6 +62,7 @@ __all__ = [
     "chat",
     "chunk_audio",
     "compute_chunk_windows",
+    "format_emotion_context",
     "load_model",
     "load_prompt",
     "load_tools",

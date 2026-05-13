@@ -12,6 +12,7 @@ from backend.core.emotion_radar.emotion_radar import (
     EmotionConfig,
     analyze_emotion,
     analyze_emotion_long,
+    format_emotion_context,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "EmotionConfig",
     "analyze_emotion",
     "analyze_emotion_long",
+    "format_emotion_context",
 ]
