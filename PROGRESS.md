@@ -1,7 +1,7 @@
 # Implementation Progress
 
-Last updated: 2026-05-11  
-Current step: **Step 03 — Speech Transcription** (🔵 active, awaiting Colab validation)
+Last updated: 2026-05-12  
+Current step: **Step 04 — Emotion Radar** (🔵 active, awaiting Colab validation)
 
 ---
 
@@ -16,8 +16,8 @@ Current step: **Step 03 — Speech Transcription** (🔵 active, awaiting Colab 
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 03 | On-device speech transcription | 🔵 Active | `notebooks/phase2/step03_gemma4_audio_transcription.ipynb` | Uses Gemma 4 E2B **native audio** (not Whisper). Helper in `backend/core/_runtime/audio.py`, schema in `data/schemas/transcription.schema.json`. Awaiting Colab run. |
-| 04 | Emotion & prosody analysis | ⬜ Pending | `notebooks/phase2/step04_emotion_radar.ipynb` | |
+| 03 | On-device speech transcription | ✅ Done | `notebooks/phase2/step03_gemma4_audio_transcription.ipynb` | Gemma 4 E2B native audio path. Helper in `backend/core/_runtime/audio.py`, schema in `data/schemas/transcription.schema.json`. All 6 checks PASS on Colab incl. > 30 s chunked path. |
+| 04 | Emotion & prosody analysis | 🔵 Active | `notebooks/phase2/step04_emotion_radar.ipynb` | Same native-audio path as Step 03. Helper in `backend/core/_runtime/emotion.py`, schema in `data/schemas/emotion_radar.schema.json`, prompt in `data/prompts/emotion_radar.md`. Awaiting Colab run. |
 
 ## Phase 3 — Core Intelligence Features
 
