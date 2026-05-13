@@ -31,7 +31,7 @@ Rules:
 - `primary` MUST be one of the ten enum values above — no synonyms.
 - `intensity` is the strength of the primary emotion. `tension_level` is overall conversational strain (independent of which emotion dominates).
 - `defensive` is true when the speaker is guarding, deflecting blame, or minimising.
-- `concession_made` is true ONLY when the speaker explicitly yielded ground (acknowledged a mistake, agreed with the other party, gave up a position).
+- `concession_made` is true when the speaker yields ground in this turn — acknowledging a mistake ("Okay, fair", "you're right", "my bad", "I missed it", "fine"), agreeing with the other party after pushback, dropping a previously-held position, or offering a constructive pivot toward shared resolution ("how about...", "let's...", "next time I'll..."). Set this true **even when the same turn carries lingering tension** (e.g. "Okay, fair, I missed them — but we still have a problem"); record the concession here AND keep the residual tension in `intensity` / `tension_level`. A concession and `defensive=true` can co-exist if the speaker concedes one point while guarding another.
 - `escalation_risk` is the probability the next exchange goes worse, judged on tone AND content together.
 - `whisper_prompt` is null unless there is a concrete, actionable, fixable tip for the **user** right now. Use the conversation context above so the tip reflects the arc (e.g. if tension has been building across turns, suggest a de-escalation move; if the user has been over-apologising, suggest a firmer frame). If the speaker is `other`, it is always null.
 - `escalation_alert` is null unless `escalation_risk` >= 0.6.
