@@ -21,6 +21,20 @@ How to think about this:
 - `destabilization_risk` reflects how badly THIS scenario would derail the user's stated goal. Vary the three values across the scenarios; do not return three identical numbers. A spread like 0.4 / 0.6 / 0.85 (least-bad → catastrophic) is healthier than 0.7 / 0.7 / 0.7.
 - `escalation_ceiling` is the worst level this conversation could plausibly reach if the user does not recover — not where it starts. A `silent` scenario can have a low ceiling; a `counter_attack` scenario typically has a high one.
 
+Voice for `title` and `description` (the user reads these as "here's how this could go wrong"):
+- Talk to the user directly as "you" in `description`, not "the user". The pre-mortem is FOR them.
+- Plain English, the way a thoughtful friend would describe a likely problem — concrete, specific, no workshop register.
+- `title` is a short, plain name for the failure mode (`"The blame redirect"`, `"Stonewall after the ask"`) — not a clinical taxonomy term.
+- Forbidden jargon: `re-anchor`, `leverage` (as a verb), `actionable`, `stakeholder`, `framing` (as a noun about a person's perspective), `low-overhead`, `secure a commitment`, `protocol`, `positive reinforcement`, `pivot from X to Y`, `operationalise`, `optimise`, `solidify`, `weaponise`. If you catch yourself reaching for one of these, rewrite in plainer words.
+
+Bad voice (what NOT to do):
+- `description`: "Jamie strategically operationalises the prior communication failure to re-anchor the conversation, leveraging the user's tendency to over-apologise as concession leverage."
+
+Good voice (what to do):
+- `description`: "Jamie hears the deadline and pivots straight to 'I told you the staging tables weren't done.' You apologise to keep things calm — and now you've handed her a way to drop the Wednesday commitment without ever turning her down directly."
+
+(The voice rule does NOT apply to `opening_move` — that's the persona's own dialogue, in their voice, not yours.)
+
 Output rules:
 - Exactly 3 scenarios. `scenario_id` values are 1, 2, 3 in order. The runtime renumbers them in code if you mislabel — but emit them correctly.
 - Each `opening_move` MUST be a complete first line the opponent says, in their voice — quoted dialogue, not a description. *"She'd probably push back on the timeline"* is wrong; *"Look, I told you the staging tables aren't done — Wednesday is not happening"* is right.

@@ -26,6 +26,14 @@ Worked example to follow exactly (study this pattern before writing your output)
 
 Notice: the openings are deferential, indirect, and face-saving — culturally calibrated in *style* — but written in the user's input language (English). They are NOT translated into Japanese, even though the conversation will eventually happen in Japanese. The user will translate the lines themselves if needed.
 
+Voice for `opening_line_recommendations` (lines the user will say out loud — they have to feel natural to deliver):
+- Each line is something a real person would say in the moment, not a corporate-training script. Short. Contractions OK. No throat-clearing preamble unless the cultural register specifically requires it (some contexts do — match the register, don't impose a generic friendliness).
+- The line must match the cultural register the input describes (deferential / direct / face-saving / etc.) AND still sound like a person speaking, not a memo.
+- Forbidden jargon when it doesn't fit the register: `actionable`, `stakeholder`, `leverage`, `low-overhead`, `protocol`, `operationalise`, `optimise`, `solidify`, `re-anchor`. In a Japanese-corporate register you would naturally use deferential phrasing — that's the register doing the work, not jargon.
+
+Voice for `simulation_instructions` (handed to the persona simulator, not shown to the user):
+- This field is internal — keep it short and operational, no need to be friendly. Tell the simulator the register and the resistance shape in 2-3 sentences.
+
 Other rules:
 - "directness_level" reflects how directly people in this context typically state requests or disagreement.
 - "face_saving_required" is true if losing face publicly would derail the conversation.

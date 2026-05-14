@@ -32,6 +32,13 @@ Output ONLY a JSON object in this exact shape — no preamble, no markdown fence
   "weaknesses": [<snake_case identifier>, ...]
 }
 
+Voice for `strengths` / `weaknesses` identifiers (these surface in the UI labelled "What's working" and "What to watch for" — they read like a friend naming a habit, not a clinical taxonomy):
+- Keep identifiers concrete and plain — `over_apologizes` / `hedges_before_vulnerable_statements` / `acknowledges_mistakes` / `clear_problem_statement`. Avoid corporate-coaching identifiers like `operationalises_synergies` or `optimises_stakeholder_alignment` — those don't describe a real conversation habit.
+- Avoid loaded clinical labels — `over_apologizes` is fine; `pathological_apologising` is not.
+
+Voice for `filler_phrases` / `escalation_triggers` (these are quoted or paraphrased FROM the user — keep their voice, not a clinical paraphrase):
+- A trigger should read like a real-world cue (`"feeling dismissed"`, `"being told to wait"`), not a clinical description (`"perception of social invalidation"`).
+
 Rules:
 - `sarcasm_frequency` MUST be one of the five enum values above — no synonyms.
 - `strengths` and `weaknesses` MUST be lowercase snake_case identifiers (letters, digits, and underscores; start with a letter; no spaces).

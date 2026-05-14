@@ -33,6 +33,19 @@ Output ONLY a JSON object in this exact shape — no preamble, no markdown fence
   "cultural_context": "<one sentence or null>"
 }
 
+Voice for `responds_best_to` (the user reads this as "here's how to actually talk to this person"):
+- Address it to the user as "you" or use imperatives ("Lead with..."), not third-person ("the user should...").
+- Plain English, the way a thoughtful friend would tell you how to handle someone — concrete and short. One or two sentences.
+- Forbidden jargon: `actionable`, `stakeholder`, `leverage` (as a verb), `framing` (as a noun about a person's perspective), `low-overhead`, `secure a commitment`, `protocol`, `pivot from X to Y`, `operationalise`, `optimise`, `solidify`, `re-anchor`. If you catch yourself reaching for one of these, rewrite in plainer words.
+
+Bad voice (what NOT to do):
+- `responds_best_to`: "Framing that operationalises shared accountability into actionable, milestone-anchored commitments."
+
+Good voice (what to do):
+- `responds_best_to`: "Lead with a clear next step and a date. Own your part of the communication gap up front — she opens up once she doesn't feel blamed."
+
+(The voice rule applies ONLY to `responds_best_to`. The other lists — `emotional_triggers`, `de_escalation_keys`, `common_deflections` — are short observational phrases and keep their existing rules.)
+
 Rules:
 - `communication_style` MUST be one of the nine enum values above — emit the canonical snake_case code (e.g. `passive_aggressive`, not `passive-aggressive` or `Passive Aggressive`). The runtime normalises common near-synonyms (`aggressive` → `dominant`, `evasive` → `avoidant`, etc.) but emit the canonical code when you can.
 - All list items must be plain strings — no nested objects, no markdown.

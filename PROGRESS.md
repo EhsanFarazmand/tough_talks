@@ -1,7 +1,7 @@
 # Implementation Progress
 
 Last updated: 2026-05-14  
-Current step: **Step 09 — Post-round debrief engine** (🔵 active — runtime + notebook + tests landed, awaiting Solmaz's Colab run)
+Current step: **Step 10 — Aftermath: plan vs reality** (⬜ pending — next up)
 
 ---
 
@@ -32,7 +32,7 @@ Current step: **Step 09 — Post-round debrief engine** (🔵 active — runtime
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 09 | Post-round debrief engine | 🔵 Active | `notebooks/phase4/step09_debrief.ipynb` | Runtime in `backend/core/_runtime/debrief.py`, schema at `data/schemas/debrief.schema.json`, prompt at `data/prompts/debrief.md`. One-shot analytical call (mirror of Step 08). Inputs: practice transcript (Step 7's emit shape) + optional PersonVault + optional TalkDNA. System-contract enforcement in code: `turn` clamped to `[1, user_turn_count]`, malformed array entries dropped silently, required string fields rejected when empty, `one_fix_next_time` required. Notebook A/B-tests `enable_thinking` on hardcoded Step-7 5-turn Jamie transcript (N=3 datapoint for `[[hypothesis-persona-thinking-helps]]`). Unit tests in `tests/unit/test_debrief.py`. Awaiting Solmaz's Colab run. |
+| 09 | Post-round debrief engine | ✅ Done | `notebooks/phase4/step09_debrief.ipynb` | Runtime in `backend/core/_runtime/debrief.py`, schema at `data/schemas/debrief.schema.json`, prompt at `data/prompts/debrief.md`. One-shot analytical call (mirror of Step 08). Inputs: practice transcript (Step 7's emit shape) + optional PersonVault + optional TalkDNA. System-contract enforcement in code: `turn` clamped to `[1, user_turn_count]`, `_coerce_over_apologies` requires an apology-cue lexeme in the quote (defence-in-depth — Run 1 mislabelled `"Thank you, that means a lot."` as an apology on both `enable_thinking` branches despite the prompt naming the cues), `_coerce_ground_lost` dedupes by turn (Run 1 produced two entries on the same USER 3 turn). Two Colab iterations: Run 1 surfaced gratitude-as-apology + direction-of-causation flip on `ground_lost` + workshop-register voice; one-pass fix iteration with three named prompt rules (`ground_lost` forbid clause for `de_escalation_keys` with profile-named contrast example; cue-list contrast for `over_apologies`; new voice/tone block with forbidden-jargon list and bad/good contrast for `reason` and `better_line`) + code-side cue regex + dedup landed all four fixes. A/B on Run 2: thinking=False kept USER 3 in `ground_lost` (acknowledged the de-escalation in the `reason` text but didn't switch buckets); thinking=True correctly moved USER 3 to `wins` and produced cleaner voice. Cell 9 prefers thinking=True for the handoff demo. **N=3 datapoint across two task families** (premortem N=2 + debrief N=1) for `[[hypothesis-persona-thinking-helps]]` on analytical payloads with cross-field consistency requirements. Three new entries in `knowledge/phases/rules.md`: (a) direction-of-causation rule extended with debrief confirmation, (b) system-contract enum/cue rules belong in code AS WELL AS prompt, (c) voice/tone needs explicit forbidden-word list + bad/good contrast — generic "match the user's language" isn't enough. Unit tests in `tests/unit/test_debrief.py` cover the cue regex (both directions), dedup, and prompt placeholder contract. |
 | 10 | Aftermath — plan vs. reality | ⬜ Pending | `notebooks/phase4/step10_aftermath.ipynb` | |
 | 11 | Relationship Pulse tracker | ⬜ Pending | `notebooks/phase4/step11_pulse.ipynb` | |
 
