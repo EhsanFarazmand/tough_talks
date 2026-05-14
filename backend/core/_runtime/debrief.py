@@ -48,6 +48,7 @@ when missing so the prompt template is never malformed on cold-start.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -91,6 +92,25 @@ _MAX_REASON_CHARS = 400
 _MAX_DESCRIPTION_CHARS = 400
 _MAX_BETTER_LINE_CHARS = 400
 _MAX_ONE_FIX_CHARS = 400
+
+# Hard cue list for `over_apologies` quotes. The first Colab run on
+# Step 9 had the model labelling `"Thank you, that means a lot."` as an
+# over-apology — gratitude, not an apology. The prompt named the cues
+# explicitly (``sorry`` / ``my bad`` / ``my fault`` / ``I shouldn't have``)
+# but both ``enable_thinking`` branches violated the rule.
+# Defence-in-depth: keep the prompt rule AND enforce in code. Same
+# pattern as Step 04's ``whisper_prompt=None for other`` and Step 07's
+# ``persona_name`` forcing — system-contract rules belong in code,
+# not just prompts.
+_APOLOGY_CUE_RE: re.Pattern[str] = re.compile(
+    r"\b("
+    r"sorry|apolog(?:y|ies|ize|ise|izing|ising)|"
+    r"my\s+bad|my\s+fault|forgive\s+me|"
+    r"i\s+shouldn'?t\s+have|i\s+messed\s+up|i\s+screwed\s+up|"
+    r"that(?:'s|\s+is|\s+was)\s+on\s+me|that\s+was\s+my"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -291,9 +311,16 @@ def _coerce_turn(value: Any, *, user_turn_count: int) -> Optional[int]:
 
 
 def _coerce_ground_lost(raw: Any, *, user_turn_count: int) -> list[dict]:
+    """Coerce the ground_lost array. One entry per turn (dedupe by turn,
+    keep the first one). Run 1 of Step 9 produced two ground_lost
+    entries for the same USER 3 turn — a full-turn quote and a
+    fragment-of-the-same-turn quote — both pointing at the same
+    'loss'. Same-turn duplicates surface a model-side reasoning slip,
+    not two distinct losses; keep the first and drop the rest."""
     if not isinstance(raw, list):
         return []
     out: list[dict] = []
+    seen_turns: set[int] = set()
     for entry in raw:
         if not isinstance(entry, dict):
             continue
@@ -302,6 +329,9 @@ def _coerce_ground_lost(raw: Any, *, user_turn_count: int) -> list[dict]:
         reason = _opt_str(entry.get("reason"))
         if turn is None or not quote or not reason:
             continue
+        if turn in seen_turns:
+            continue
+        seen_turns.add(turn)
         out.append(
             {
                 "turn": turn,
@@ -315,6 +345,15 @@ def _coerce_ground_lost(raw: Any, *, user_turn_count: int) -> list[dict]:
 
 
 def _coerce_over_apologies(raw: Any, *, user_turn_count: int) -> list[dict]:
+    """Coerce the over_apologies array. Each ``quote`` MUST contain an
+    apology-cue lexeme (``sorry`` / ``apolog…`` / ``my bad`` /
+    ``my fault`` / ``I shouldn't have`` / etc.) or the entry is
+    dropped. Run 1 of Step 9 mislabelled ``"Thank you, that means a
+    lot."`` as an over-apology — gratitude, not an apology — on both
+    ``enable_thinking`` branches despite the prompt naming the cues
+    explicitly. Defence-in-depth: enforce the cue list in code so a
+    future model regression cannot leak gratitude / praise / generic
+    affirmation into ``over_apologies``."""
     if not isinstance(raw, list):
         return []
     out: list[dict] = []
@@ -324,6 +363,14 @@ def _coerce_over_apologies(raw: Any, *, user_turn_count: int) -> list[dict]:
         turn = _coerce_turn(entry.get("turn"), user_turn_count=user_turn_count)
         quote = _opt_str(entry.get("quote"))
         if turn is None or not quote:
+            continue
+        if not _APOLOGY_CUE_RE.search(quote):
+            LOG.info(
+                "Dropping over_apologies entry on turn %d — quote contains "
+                "no apology cue: %r",
+                turn,
+                quote,
+            )
             continue
         out.append(
             {

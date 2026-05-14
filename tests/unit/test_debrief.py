@@ -33,6 +33,7 @@ from backend.core._runtime.debrief import (
     RETRY_SAMPLING,
     DebriefConfig,
     DebriefError,
+    _APOLOGY_CUE_RE,
     _coerce_debrief_payload,
     _coerce_ground_lost,
     _coerce_missed_openings,
@@ -251,11 +252,66 @@ def test_coerce_ground_lost_drops_entries_with_bad_turn():
 
 
 def test_coerce_ground_lost_caps_at_max_list_items():
+    """One entry per distinct turn (dedup); the cap kicks in across
+    turns, not within a turn. With 20 distinct turns supplied, the
+    cap clips to 8."""
     raw = [
-        {"turn": 1, "quote": f"quote {i}", "reason": f"reason {i}"}
+        {"turn": (i % 5) + 1, "quote": f"quote {i}", "reason": f"reason {i}"}
         for i in range(20)
     ]
-    assert len(_coerce_ground_lost(raw, user_turn_count=5)) == 8
+    # 5 distinct turns supplied repeatedly -> 5 after dedup.
+    assert len(_coerce_ground_lost(raw, user_turn_count=5)) == 5
+    # 12 distinct turns supplied -> capped at 8.
+    raw_wide = [
+        {"turn": i + 1, "quote": f"q{i}", "reason": f"r{i}"}
+        for i in range(12)
+    ]
+    assert len(_coerce_ground_lost(raw_wide, user_turn_count=20)) == 8
+
+
+def test_coerce_ground_lost_dedupes_same_turn_keeping_first():
+    """Run 1 of Step 9 produced two ground_lost entries for the same
+    USER 3 turn — a full-turn quote and a fragment-of-the-same-turn
+    quote. Same loss attributed twice. Runtime keeps the first entry
+    per turn and drops the rest."""
+    raw = [
+        {"turn": 3, "quote": "first take on turn 3", "reason": "the stronger reason"},
+        {"turn": 3, "quote": "fragment of turn 3", "reason": "a redundant second pass"},
+        {"turn": 4, "quote": "different turn", "reason": "kept"},
+    ]
+    out = _coerce_ground_lost(raw, user_turn_count=5)
+    assert [e["turn"] for e in out] == [3, 4]
+    assert out[0]["quote"] == "first take on turn 3"
+
+
+def test_coerce_over_apologies_keeps_entries_with_apology_cues():
+    """Quotes containing canonical apology cues survive the cue check."""
+    raw = [
+        {"turn": 1, "quote": "Sorry, I should've caught that email earlier."},
+        {"turn": 2, "quote": "My bad on the missed deadline."},
+        {"turn": 3, "quote": "I shouldn't have brought up old commitments like that."},
+        {"turn": 4, "quote": "That was on me, honestly."},
+        {"turn": 5, "quote": "I messed up the timing here."},
+    ]
+    out = _coerce_over_apologies(raw, user_turn_count=5)
+    assert [e["turn"] for e in out] == [1, 2, 3, 4, 5]
+
+
+def test_coerce_over_apologies_drops_gratitude_and_agreement():
+    """Step 9 Run 1 mislabelled gratitude (`"Thank you, that means a lot."`)
+    as an over-apology on both ``enable_thinking`` branches despite the
+    prompt naming the cues explicitly. The runtime now enforces the
+    cue list in code so gratitude / agreement / de-escalation moves
+    cannot leak through."""
+    raw = [
+        {"turn": 5, "quote": "Thank you, that means a lot."},
+        {"turn": 4, "quote": "Fair point, you're right about that."},
+        {"turn": 3, "quote": "I'm not blaming you — I'm trying to understand."},
+        {"turn": 2, "quote": "Sorry, my bad on that one."},  # this one is a real apology
+    ]
+    out = _coerce_over_apologies(raw, user_turn_count=5)
+    assert [e["turn"] for e in out] == [2]
+    assert out[0]["quote"].startswith("Sorry")
 
 
 def test_coerce_over_apologies_keeps_turn_and_quote_only():
@@ -266,6 +322,48 @@ def test_coerce_over_apologies_keeps_turn_and_quote_only():
     out = _coerce_over_apologies(raw, user_turn_count=5)
     assert len(out) == 1
     assert set(out[0].keys()) == {"turn", "quote"}
+
+
+def test_apology_cue_regex_recognises_each_documented_cue():
+    """The prompt names a specific list of apology cues
+    (``sorry`` / ``apolog…`` / ``my bad`` / ``my fault`` /
+    ``I shouldn't have`` / ``I messed up`` / ``that was on me``).
+    The runtime regex must match every cue the prompt promises to
+    accept, otherwise model outputs that follow the prompt would be
+    dropped by the runtime — silent contract divergence."""
+    documented_cues = (
+        "I'm sorry about that.",
+        "I apologise for the delay.",
+        "My bad, I dropped the ball.",
+        "That was my fault.",
+        "I shouldn't have escalated like that.",
+        "I shouldnt have brought it up.",  # missing apostrophe
+        "I messed up the handoff.",
+        "I screwed up the timing.",
+        "That was on me.",
+        "That is on me.",
+        "That's on me.",
+    )
+    for quote in documented_cues:
+        assert _APOLOGY_CUE_RE.search(quote), (
+            f"apology cue regex should match documented cue: {quote!r}"
+        )
+
+
+def test_apology_cue_regex_rejects_non_apologies():
+    """Gratitude, agreement, and de-escalation moves are NOT apologies
+    and must not match the cue regex."""
+    non_apologies = (
+        "Thank you, that means a lot.",
+        "Fair point, you're right.",
+        "I appreciate your patience.",
+        "I'm not blaming you.",
+        "Let's solve this together.",
+    )
+    for quote in non_apologies:
+        assert not _APOLOGY_CUE_RE.search(quote), (
+            f"apology cue regex should NOT match: {quote!r}"
+        )
 
 
 def test_coerce_missed_openings_requires_description_and_better_line():
