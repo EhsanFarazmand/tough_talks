@@ -1,7 +1,7 @@
 # Implementation Progress
 
-Last updated: 2026-05-12  
-Current step: **Step 04 — Emotion Radar** (🔵 active, awaiting Colab validation)
+Last updated: 2026-05-13  
+Current step: **Step 05 — Talk DNA pattern detector** (🔵 active, awaiting Colab validation)
 
 ---
 
@@ -17,13 +17,13 @@ Current step: **Step 04 — Emotion Radar** (🔵 active, awaiting Colab validat
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
 | 03 | On-device speech transcription | ✅ Done | `notebooks/phase2/step03_gemma4_audio_transcription.ipynb` | Gemma 4 E2B native audio path. Helper in `backend/core/_runtime/audio.py`, schema in `data/schemas/transcription.schema.json`. All 6 checks PASS on Colab incl. > 30 s chunked path. |
-| 04 | Emotion & prosody analysis | 🔵 Active | `notebooks/phase2/step04_emotion_radar.ipynb` | Same native-audio path as Step 03. Helper in `backend/core/_runtime/emotion.py`, schema in `data/schemas/emotion_radar.schema.json`, prompt in `data/prompts/emotion_radar.md`. Awaiting Colab run. |
+| 04 | Emotion & prosody analysis | ✅ Done | `notebooks/phase2/step04_emotion_radar.ipynb` | Same native-audio path as Step 03. Helper in `backend/core/_runtime/emotion.py`, schema in `data/schemas/emotion_radar.schema.json`, prompt in `data/prompts/emotion_radar.md`. All 6 checks PASS on Colab; rolling-context whisper coaching validated end-to-end. |
 
 ## Phase 3 — Core Intelligence Features
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 05 | Talk DNA pattern detector | ⬜ Pending | `notebooks/phase3/step05_talk_dna.ipynb` | |
+| 05 | Talk DNA pattern detector | 🔵 Active | `notebooks/phase3/step05_talk_dna.ipynb` | Text-only Gemma 4 path. Hybrid design — deterministic numerics (apologies, fillers, avg-words, interruption) computed in code; qualitative fields (sarcasm, silence-under-pressure, escalation triggers, strengths/weaknesses) come from prompt-based JSON. Helper in `backend/core/_runtime/talk_dna.py`, schema in `data/schemas/talk_dna.schema.json`, prompt in `data/prompts/talk_dna.md`. Awaiting Colab run. |
 | 06 | Person Vault construction | ⬜ Pending | `notebooks/phase3/step06_person_vault.ipynb` | |
 | 07 | Adversarial persona simulator | ⬜ Pending | `notebooks/phase3/step07_persona_sim.ipynb` | |
 | 08 | Pre-Mortem generator | ⬜ Pending | `notebooks/phase3/step08_premortem.ipynb` | |
