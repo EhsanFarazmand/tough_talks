@@ -35,8 +35,10 @@ from backend.core._runtime.person_vault import (
     DeterministicPersonMetrics,
     PersonVaultAnalysisError,
     PersonVaultConfig,
+    _COMMUNICATION_STYLE_SYNONYMS,
     _coerce_person_vault_payload,
     _merge_string_lists,
+    _normalize_communication_style,
     _resolve_person_id,
     _resolve_relationship_type,
     compute_person_metrics,
@@ -507,6 +509,111 @@ def test_coerce_rejects_invalid_communication_style():
             cfg=PersonVaultConfig(name="X"),
             metrics=_basic_metrics(),
         )
+
+
+# ---------------------------------------------------------------------------
+# communication_style normalisation: casing, separators, synonyms
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_style_accepts_canonical_values():
+    for style in ALLOWED_COMMUNICATION_STYLES:
+        assert _normalize_communication_style(style) == style
+
+
+def test_normalize_style_accepts_defensive():
+    """Added after the first Colab run where the model reached for
+    'defensive' to describe Jamie in Conv A — that value is now in the
+    enum and must pass the normaliser unchanged."""
+    assert _normalize_communication_style("defensive") == "defensive"
+    assert "defensive" in ALLOWED_COMMUNICATION_STYLES
+
+
+def test_normalize_style_handles_casing():
+    assert _normalize_communication_style("Direct") == "direct"
+    assert _normalize_communication_style("DEFENSIVE") == "defensive"
+
+
+def test_normalize_style_handles_hyphen_separator():
+    """`passive-aggressive` is the colloquial spelling — the model often
+    emits it with a hyphen instead of the schema's underscore."""
+    assert (
+        _normalize_communication_style("passive-aggressive")
+        == "passive_aggressive"
+    )
+
+
+def test_normalize_style_handles_space_separator():
+    assert (
+        _normalize_communication_style("Passive Aggressive")
+        == "passive_aggressive"
+    )
+
+
+def test_normalize_style_maps_aggressive_to_dominant():
+    assert _normalize_communication_style("aggressive") == "dominant"
+
+
+def test_normalize_style_maps_evasive_to_avoidant():
+    assert _normalize_communication_style("evasive") == "avoidant"
+
+
+def test_normalize_style_maps_blunt_to_direct():
+    assert _normalize_communication_style("blunt") == "direct"
+
+
+def test_normalize_style_maps_warm_to_empathetic():
+    assert _normalize_communication_style("warm") == "empathetic"
+
+
+def test_normalize_style_returns_none_for_unrecognised():
+    assert _normalize_communication_style("transcendent") is None
+    assert _normalize_communication_style("") is None
+    assert _normalize_communication_style(None) is None
+    assert _normalize_communication_style(42) is None
+
+
+def test_synonym_map_values_all_in_enum():
+    """Every synonym must point at a canonical enum value — otherwise
+    the normaliser could return a string the coercer then rejects."""
+    for synonym, canonical in _COMMUNICATION_STYLE_SYNONYMS.items():
+        assert canonical in ALLOWED_COMMUNICATION_STYLES, (
+            f"synonym {synonym!r} maps to {canonical!r}, "
+            f"which is not in ALLOWED_COMMUNICATION_STYLES"
+        )
+
+
+def test_coerce_accepts_defensive_communication_style():
+    """Happy path for the new 'defensive' enum value."""
+    payload = _minimal_llm_payload(communication_style="defensive")
+    result = _coerce_person_vault_payload(
+        payload,
+        cfg=PersonVaultConfig(name="Jamie"),
+        metrics=_basic_metrics(),
+    )
+    assert result["profile"]["communication_style"] == "defensive"
+
+
+def test_coerce_normalises_aggressive_synonym_to_dominant():
+    """The model emitting a near-synonym shouldn't fail the coerce; the
+    coercer should accept it and store the canonical enum value."""
+    payload = _minimal_llm_payload(communication_style="aggressive")
+    result = _coerce_person_vault_payload(
+        payload,
+        cfg=PersonVaultConfig(name="Jamie"),
+        metrics=_basic_metrics(),
+    )
+    assert result["profile"]["communication_style"] == "dominant"
+
+
+def test_coerce_normalises_hyphenated_passive_aggressive():
+    payload = _minimal_llm_payload(communication_style="passive-aggressive")
+    result = _coerce_person_vault_payload(
+        payload,
+        cfg=PersonVaultConfig(name="Jamie"),
+        metrics=_basic_metrics(),
+    )
+    assert result["profile"]["communication_style"] == "passive_aggressive"
 
 
 def test_coerce_rejects_missing_communication_style():

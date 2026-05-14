@@ -15,7 +15,7 @@ Conversation transcript (`[idx] speaker (optional emotion): text`):
 $transcript
 
 What to produce — focused on the `other` party (the counterparty), not the user:
-- `communication_style` — one of: direct | indirect | passive_aggressive | avoidant | collaborative | dominant | assertive | empathetic. Pick the single best fit based on this conversation AND the prior style if one is set. Use `assertive` for clear-and-firm-but-respectful pushback (distinct from blunt `direct` and power-over `dominant`); use `empathetic` when the person leads with acknowledging feelings before problem-solving (distinct from `collaborative`'s focus on shared process). Avoid flipping the style every conversation; only change it when the new evidence clearly outweighs the prior.
+- `communication_style` — one of: direct | indirect | passive_aggressive | avoidant | collaborative | dominant | assertive | empathetic | defensive. Pick the single best fit based on this conversation AND the prior style if one is set. Use `assertive` for clear-and-firm-but-respectful pushback (distinct from blunt `direct` and power-over `dominant`); use `empathetic` when the person leads with acknowledging feelings before problem-solving (distinct from `collaborative`'s focus on shared process); use `defensive` when the person rejects blame, cites history, or guards against criticism (distinct from `passive_aggressive`'s indirect hostility and `avoidant`'s withdrawal). Avoid flipping the style every conversation; only change it when the new evidence clearly outweighs the prior.
 - `emotional_triggers` — short phrases (≤ 6 words each) describing topics, behaviours, or framings that visibly escalated, defensiveness, or shut down the counterparty in THIS conversation. Quote or paraphrase from the transcript. Return NEW observations only — the runtime will merge them with priors.
 - `de_escalation_keys` — short phrases describing what calmed the counterparty, opened them up, or moved them toward concession in this conversation. Same "new observations only" rule.
 - `common_deflections` — short phrases describing how the counterparty avoided the issue, pushed blame back, or invoked history. Curate from the deterministic candidates AND from your own reading of the transcript. Keep phrases that the counterparty actually used or paraphrased; drop generic boilerplate.
@@ -25,7 +25,7 @@ What to produce — focused on the `other` party (the counterparty), not the use
 Output ONLY a JSON object in this exact shape — no preamble, no markdown fences, no trailing prose:
 
 {
-  "communication_style": "<direct | indirect | passive_aggressive | avoidant | collaborative | dominant | assertive | empathetic>",
+  "communication_style": "<direct | indirect | passive_aggressive | avoidant | collaborative | dominant | assertive | empathetic | defensive>",
   "emotional_triggers": [<string>, ...],
   "de_escalation_keys": [<string>, ...],
   "common_deflections": [<string>, ...],
@@ -34,7 +34,7 @@ Output ONLY a JSON object in this exact shape — no preamble, no markdown fence
 }
 
 Rules:
-- `communication_style` MUST be one of the eight enum values above — no synonyms.
+- `communication_style` MUST be one of the nine enum values above — emit the canonical snake_case code (e.g. `passive_aggressive`, not `passive-aggressive` or `Passive Aggressive`). The runtime normalises common near-synonyms (`aggressive` → `dominant`, `evasive` → `avoidant`, etc.) but emit the canonical code when you can.
 - All list items must be plain strings — no nested objects, no markdown.
 - Keep each list to at most 6 items — only the most signal-bearing observations from this conversation. Generic items ("communicates badly") are useless.
 - The lists should describe THIS conversation. The runtime accumulates them with prior observations — do not repeat priors verbatim unless this conversation re-demonstrated them.

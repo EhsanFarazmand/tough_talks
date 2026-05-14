@@ -104,7 +104,83 @@ ALLOWED_COMMUNICATION_STYLES: tuple[str, ...] = (
     "dominant",
     "assertive",
     "empathetic",
+    "defensive",
 )
+
+# Near-synonym map for ``communication_style``. The LLM tends to reach
+# for words that match its training-time distribution rather than our
+# enum (e.g. it emits "defensive" / "aggressive" / "evasive" instead of
+# the canonical enum codes). Rather than fight the model with prompt
+# rules, we accept the obvious synonyms here and map them to the
+# closest canonical value. Truly unknown styles still raise.
+#
+# Keys are space-separated lower-case (so "passive-aggressive" and
+# "Passive Aggressive" both normalise to the same key before lookup);
+# values must be in :data:`ALLOWED_COMMUNICATION_STYLES`.
+_COMMUNICATION_STYLE_SYNONYMS: dict[str, str] = {
+    # Confrontational / aggressive cluster
+    "aggressive": "dominant",
+    "confrontational": "dominant",
+    "combative": "dominant",
+    "argumentative": "dominant",
+    "controlling": "dominant",
+    # Avoidant / evasive cluster
+    "evasive": "avoidant",
+    "withdrawn": "avoidant",
+    "stonewalling": "avoidant",
+    "deflective": "avoidant",
+    # Direct cluster
+    "blunt": "direct",
+    "frank": "direct",
+    "straightforward": "direct",
+    # Assertive cluster
+    "firm": "assertive",
+    # Empathetic / warm cluster
+    "warm": "empathetic",
+    "supportive": "empathetic",
+    "compassionate": "empathetic",
+    # Collaborative cluster
+    "open": "collaborative",
+    "cooperative": "collaborative",
+    # Indirect / diplomatic cluster
+    "diplomatic": "indirect",
+    "tactful": "indirect",
+    # Defensive cluster — guarded / protective postures
+    "guarded": "defensive",
+    "protective": "defensive",
+}
+
+
+def _normalize_communication_style(value: Any) -> Optional[str]:
+    """Coerce a model-emitted ``communication_style`` to a canonical
+    enum value.
+
+    Handles three sources of drift between model output and the schema
+    enum:
+
+    * **Casing** — ``"Direct"`` / ``"DIRECT"`` → ``"direct"``.
+    * **Word separator** — ``"passive-aggressive"`` /
+      ``"passive aggressive"`` → ``"passive_aggressive"``.
+    * **Near-synonyms** — ``"aggressive"`` → ``"dominant"``,
+      ``"evasive"`` → ``"avoidant"``, etc. via
+      :data:`_COMMUNICATION_STYLE_SYNONYMS`.
+
+    Returns the canonical enum value, or ``None`` if the input is
+    unrecognisable. Callers raise a :class:`PersonVaultAnalysisError`
+    on ``None`` so the retry path can take over.
+    """
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip().lower().replace("-", " ")
+    if not cleaned:
+        return None
+    # First try the canonical snake_case form (covers exact enum match
+    # plus spelling/spacing variants of the canonical values).
+    snake = cleaned.replace(" ", "_")
+    if snake in ALLOWED_COMMUNICATION_STYLES:
+        return snake
+    # Fall back to the synonym map (keyed on the space-separated form).
+    return _COMMUNICATION_STYLE_SYNONYMS.get(cleaned)
 
 # Light sampling for the retry path — same rationale as the TalkDNA and
 # emotion-radar retries: just enough randomness to escape a single bad
@@ -499,13 +575,11 @@ def _coerce_person_vault_payload(
             f"person_vault payload not an object: {type(payload).__name__}"
         )
 
-    style = payload.get("communication_style")
-    if (
-        not isinstance(style, str)
-        or style not in ALLOWED_COMMUNICATION_STYLES
-    ):
+    raw_style = payload.get("communication_style")
+    style = _normalize_communication_style(raw_style)
+    if style is None:
         raise PersonVaultAnalysisError(
-            f"communication_style not in enum: {style!r}; "
+            f"communication_style not in enum: {raw_style!r}; "
             f"allowed: {ALLOWED_COMMUNICATION_STYLES}"
         )
 
