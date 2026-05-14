@@ -24,7 +24,7 @@
       "properties": {
         "communication_style": {
           "type": "string",
-          "enum": ["direct", "indirect", "passive_aggressive", "avoidant", "collaborative", "dominant"]
+          "enum": ["direct", "indirect", "passive_aggressive", "avoidant", "collaborative", "dominant", "assertive", "empathetic"]
         },
         "emotional_triggers": {
           "type": "array",

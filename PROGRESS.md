@@ -1,7 +1,7 @@
 # Implementation Progress
 
-Last updated: 2026-05-13  
-Current step: **Step 05 — Talk DNA pattern detector** (🔵 active, awaiting Colab validation)
+Last updated: 2026-05-14  
+Current step: **Step 06 — Person Vault construction** (🔵 active — implementation ready for Colab run)
 
 ---
 
@@ -23,8 +23,8 @@ Current step: **Step 05 — Talk DNA pattern detector** (🔵 active, awaiting C
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 05 | Talk DNA pattern detector | 🔵 Active | `notebooks/phase3/step05_talk_dna.ipynb` | Text-only Gemma 4 path. Hybrid design — deterministic numerics (apologies, fillers, avg-words, interruption) computed in code; qualitative fields (sarcasm, silence-under-pressure, escalation triggers, strengths/weaknesses) come from prompt-based JSON. Helper in `backend/core/_runtime/talk_dna.py`, schema in `data/schemas/talk_dna.schema.json`, prompt in `data/prompts/talk_dna.md`. Awaiting Colab run. |
-| 06 | Person Vault construction | ⬜ Pending | `notebooks/phase3/step06_person_vault.ipynb` | |
+| 05 | Talk DNA pattern detector | ✅ Done | `notebooks/phase3/step05_talk_dna.ipynb` | Text-only Gemma 4 path. Hybrid design — deterministic numerics (apologies, fillers, avg-words, interruption) computed in code; qualitative fields come from prompt-based JSON. Helper in `backend/core/_runtime/talk_dna.py`, schema in `data/schemas/talk_dna.schema.json`, prompt in `data/prompts/talk_dna.md`. All 7 checks PASS on Colab; v1 → v2 incremental update verified (weighted-average numerics, version bump, conversation_count increment). |
+| 06 | Person Vault construction | 🔵 Active | `notebooks/phase3/step06_person_vault.ipynb` | Text-only Gemma 4 path (mirror of Step 05 for the `other` speaker). Hybrid design — deterministic numerics (`avg_other_turn_words`, deflection-phrase candidates, `interruption_of_user_rate` when timing present) computed in code; qualitative fields (`communication_style` enum, `emotional_triggers`, `de_escalation_keys`, curated `common_deflections`, `responds_best_to`, optional `cultural_context`) come from prompt-based JSON. Runtime ACCUMULATES qualitative lists across conversations (deduped, capped at 8). Helper in `backend/core/_runtime/person_vault.py`, schema in `data/schemas/person_vault.schema.json`, prompt in `data/prompts/person_vault.md`. Awaiting Colab results. |
 | 07 | Adversarial persona simulator | ⬜ Pending | `notebooks/phase3/step07_persona_sim.ipynb` | |
 | 08 | Pre-Mortem generator | ⬜ Pending | `notebooks/phase3/step08_premortem.ipynb` | |
 

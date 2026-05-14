@@ -31,6 +31,19 @@ from .emotion import (
 from .generation import GenerationConfig, chat
 from .model import DEFAULT_MODEL_ID, LoadConfig, load_model
 from .parsing import JsonParseError, parse_json, try_parse_json
+from .person_vault import (
+    ALLOWED_COMMUNICATION_STYLES,
+    ALLOWED_RELATIONSHIP_TYPES,
+    DEFAULT_PERSON_NAME,
+    DEFAULT_PERSON_VAULT_PROMPT_NAME,
+    DEFAULT_RELATIONSHIP_TYPE,
+    DeterministicPersonMetrics,
+    PersonVaultAnalysisError,
+    PersonVaultConfig,
+    analyze_person_vault,
+    compute_person_metrics,
+    format_person_prior_profile,
+)
 from .prompts import Prompt, PromptError, load_prompt
 from .talk_dna import (
     ALLOWED_SARCASM_FREQUENCIES,
@@ -48,24 +61,32 @@ from .tool_calls import ToolCallParseError, parse_tool_calls
 from .tools import ToolSchemaError, load_tools
 
 __all__ = [
+    "ALLOWED_COMMUNICATION_STYLES",
     "ALLOWED_EMOTIONS",
+    "ALLOWED_RELATIONSHIP_TYPES",
     "ALLOWED_SARCASM_FREQUENCIES",
     "ALLOWED_SPEAKERS",
     "DEFAULT_CHUNK_OVERLAP_SECONDS",
     "DEFAULT_CHUNK_SECONDS",
     "DEFAULT_EMOTION_PROMPT_NAME",
     "DEFAULT_MODEL_ID",
+    "DEFAULT_PERSON_NAME",
+    "DEFAULT_PERSON_VAULT_PROMPT_NAME",
     "DEFAULT_PRIOR_CONTEXT_HISTORY",
+    "DEFAULT_RELATIONSHIP_TYPE",
     "DEFAULT_TALK_DNA_PROMPT_NAME",
     "DEFAULT_TRANSCRIPTION_INSTRUCTION",
     "DEFAULT_USER_ID",
     "DeterministicMetrics",
+    "DeterministicPersonMetrics",
     "EmotionAnalysisError",
     "EmotionConfig",
     "GenerationConfig",
     "JsonParseError",
     "LoadConfig",
     "MAX_AUDIO_SECONDS",
+    "PersonVaultAnalysisError",
+    "PersonVaultConfig",
     "Prompt",
     "PromptError",
     "TalkDNAAnalysisError",
@@ -75,6 +96,7 @@ __all__ = [
     "TranscribeConfig",
     "analyze_emotion",
     "analyze_emotion_long",
+    "analyze_person_vault",
     "analyze_talk_dna",
     "build_emotion_messages",
     "build_transcription_messages",
@@ -82,7 +104,9 @@ __all__ = [
     "chunk_audio",
     "compute_chunk_windows",
     "compute_deterministic_metrics",
+    "compute_person_metrics",
     "format_emotion_context",
+    "format_person_prior_profile",
     "format_prior_profile",
     "format_transcript",
     "load_model",
