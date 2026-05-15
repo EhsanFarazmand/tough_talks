@@ -1,7 +1,7 @@
 # Implementation Progress
 
 Last updated: 2026-05-15  
-Current step: **Step 12 — FastAPI service** (⬜ pending — next up)
+Current step: **Step 12 — FastAPI service** (🔵 active — implementation landed, awaiting Colab run)
 
 ---
 
@@ -40,7 +40,7 @@ Current step: **Step 12 — FastAPI service** (⬜ pending — next up)
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 12 | FastAPI service | ⬜ Pending | `notebooks/phase5/step12_fastapi.ipynb` | |
+| 12 | FastAPI service | 🔵 Active | `notebooks/phase5/step12_fastapi.ipynb` | App factory + lifespan-managed ModelRegistry (both text-only + multimodal Gemma 4 variants) in `backend/api/main.py` / `deps.py`. One router per Phase 1–4 component under `backend/api/routes/`: `/talk-dna/analyze`, `/vault/build`, `/persona/reply`, `/persona/run`, `/premortem`, `/debrief`, `/aftermath`, `/pulse` (all text), `/transcribe`, `/emotion/analyze` (multipart audio). Pydantic envelopes in `schemas.py` — thin wrappers over the runtime `XxxConfig` dataclasses; nested artifacts pass through as opaque dicts (the JSON schemas + runtime coercers are the source of truth for output). Runtime `XxxError` → HTTP 422 with the diagnostic `attempts` list surfaced; `RegistryNotReady` → 503. Unit tests in `tests/unit/test_api.py` exercise every route with the registry mocked (no model load). Notebook drives the routes via `TestClient` in-process — both Gemma 4 variants load once and are injected via `app.dependency_overrides[get_registry]`; final cell renders a pass/fail table unconditionally. Pending Colab run. |
 | 13 | Local JSON storage schema | ⬜ Pending | `notebooks/phase5/step13_storage.ipynb` | |
 
 ## Phase 6 — Frontend Integration
