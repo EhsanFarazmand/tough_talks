@@ -846,3 +846,207 @@ def test_text_route_falls_back_to_multimodal_when_text_missing(
         assert captured["model"] is mm_model
     finally:
         app.dependency_overrides.pop(get_registry, None)
+
+
+# ---------------------------------------------------------------------------
+# /storage/* — Step 13 local JSON storage routes
+# ---------------------------------------------------------------------------
+
+
+from pathlib import Path  # noqa: E402  (kept local so the diff is self-contained)
+
+from backend.api.deps import get_storage_root  # noqa: E402
+
+
+@pytest.fixture
+def storage_client(tmp_path: Path) -> Iterator[TestClient]:
+    """TestClient that points the storage routes at a clean tmp directory.
+
+    The storage layer is filesystem-only — no model load required — so
+    we skip the registry override here. Any route that needs a
+    registry still 503s under this fixture, which is the right
+    semantics (the storage tests are unit-scoped, not integration).
+    """
+    app.dependency_overrides[get_storage_root] = lambda: tmp_path
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(get_storage_root, None)
+
+
+_STORAGE_TALK_DNA = {
+    "user_id": "local",
+    "version": 1,
+    "patterns": {
+        "filler_phrases": [],
+        "apology_rate": 0.0,
+        "silence_under_pressure": False,
+        "sarcasm_frequency": "low",
+    },
+    "strengths": [],
+    "weaknesses": [],
+    "updated_at": "2026-05-15T00:00:00+00:00",
+}
+
+_STORAGE_VAULT = {
+    "person_id": "person_route_test",
+    "name": "Jamie",
+    "relationship_type": "colleague",
+    "version": 1,
+    "conversation_count": 1,
+    "profile": {
+        "communication_style": "defensive",
+        "emotional_triggers": [],
+        "de_escalation_keys": [],
+        "common_deflections": [],
+    },
+    "updated_at": "2026-05-15T00:00:00+00:00",
+}
+
+_STORAGE_PULSE = {
+    "person_id": "person_route_test",
+    "version": 1,
+    "round_count": 2,
+    "health_score": 0.6,
+    "health_trend": "stable",
+    "trajectory_summary": "Stable across two rounds.",
+    "round_summaries": [
+        {
+            "round_id": "round_a",
+            "started_at": "2026-04-30T00:00:00+00:00",
+            "goal_status": "partial",
+            "prediction_accuracy": 0.5,
+            "headline": "Round A.",
+        },
+        {
+            "round_id": "round_b",
+            "started_at": "2026-05-14T00:00:00+00:00",
+            "goal_status": "partial",
+            "prediction_accuracy": 0.6,
+            "headline": "Round B.",
+        },
+    ],
+    "recurring_patterns": [],
+    "emerging_concerns": [],
+    "relationship_wins": [],
+    "next_step_recommendation": "Keep going.",
+    "updated_at": "2026-05-15T00:00:00+00:00",
+}
+
+_STORAGE_CONVERSATION = {
+    "round_id": "round_route_test",
+    "person_id": "person_route_test",
+    "started_at": "2026-05-15T15:00:00+00:00",
+    "mode": "practice",
+    "transcript": [
+        {"speaker": "user", "text": "Hi."},
+        {"speaker": "persona", "reply": "Hello.", "resistance_type": "concede", "escalation_level": 0.1},
+    ],
+    "updated_at": "2026-05-15T15:00:00+00:00",
+}
+
+
+def test_storage_talk_dna_put_then_get(storage_client: TestClient):
+    put = storage_client.put("/storage/talk-dna", json=_STORAGE_TALK_DNA)
+    assert put.status_code == 200, put.text
+    body = put.json()
+    assert body["payload"]["user_id"] == "local"
+    assert body["path"].endswith("local.json")
+    got = storage_client.get("/storage/talk-dna")
+    assert got.status_code == 200
+    assert got.json() == _STORAGE_TALK_DNA
+
+
+def test_storage_talk_dna_get_missing_is_404(storage_client: TestClient):
+    response = storage_client.get("/storage/talk-dna")
+    assert response.status_code == 404
+    assert response.json()["detail"]["component"] == "talk_dna_storage"
+
+
+def test_storage_talk_dna_invalid_payload_is_422(storage_client: TestClient):
+    bad = {k: v for k, v in _STORAGE_TALK_DNA.items() if k != "patterns"}
+    response = storage_client.put("/storage/talk-dna", json=bad)
+    assert response.status_code == 422
+    assert "patterns" in response.json()["detail"]["error"]
+
+
+def test_storage_vault_put_get_list(storage_client: TestClient):
+    put = storage_client.put("/storage/vault/person_route_test", json=_STORAGE_VAULT)
+    assert put.status_code == 200, put.text
+    got = storage_client.get("/storage/vault/person_route_test")
+    assert got.status_code == 200
+    assert got.json() == _STORAGE_VAULT
+    listing = storage_client.get("/storage/vault")
+    assert listing.status_code == 200
+    body = listing.json()
+    assert body["count"] == 1
+    assert body["items"][0]["person_id"] == "person_route_test"
+
+
+def test_storage_vault_path_id_overrides_body_id(storage_client: TestClient):
+    """A PUT with a body id different from the path id stores under the
+    path id — the route is the authoritative source.
+    """
+    body = {**_STORAGE_VAULT, "person_id": "person_wrong"}
+    response = storage_client.put("/storage/vault/person_route_test", json=body)
+    assert response.status_code == 200
+    assert response.json()["payload"]["person_id"] == "person_route_test"
+    # And the wrong id is NOT created.
+    assert storage_client.get("/storage/vault/person_wrong").status_code == 404
+
+
+def test_storage_vault_get_missing_is_404(storage_client: TestClient):
+    response = storage_client.get("/storage/vault/person_nope")
+    assert response.status_code == 404
+
+
+def test_storage_pulse_put_get_list(storage_client: TestClient):
+    put = storage_client.put("/storage/pulse/person_route_test", json=_STORAGE_PULSE)
+    assert put.status_code == 200, put.text
+    got = storage_client.get("/storage/pulse/person_route_test")
+    assert got.status_code == 200
+    assert got.json()["round_count"] == 2
+    listing = storage_client.get("/storage/pulse")
+    assert listing.status_code == 200
+    assert listing.json()["count"] == 1
+
+
+def test_storage_pulse_get_missing_is_404(storage_client: TestClient):
+    response = storage_client.get("/storage/pulse/person_nope")
+    assert response.status_code == 404
+
+
+def test_storage_conversations_full_lifecycle(storage_client: TestClient):
+    # PUT
+    put = storage_client.put(
+        "/storage/conversations/round_route_test", json=_STORAGE_CONVERSATION
+    )
+    assert put.status_code == 200, put.text
+    # GET single
+    got = storage_client.get("/storage/conversations/round_route_test")
+    assert got.status_code == 200
+    assert got.json()["round_id"] == "round_route_test"
+    # LIST
+    listing = storage_client.get("/storage/conversations")
+    assert listing.status_code == 200
+    assert listing.json()["count"] == 1
+    # LIST filtered
+    filtered = storage_client.get(
+        "/storage/conversations", params={"person_id": "person_route_test"}
+    )
+    assert filtered.json()["count"] == 1
+    filtered_miss = storage_client.get(
+        "/storage/conversations", params={"person_id": "person_nope"}
+    )
+    assert filtered_miss.json()["count"] == 0
+    # DELETE
+    delete = storage_client.delete("/storage/conversations/round_route_test")
+    assert delete.status_code == 204
+    # GET after delete -> 404
+    after = storage_client.get("/storage/conversations/round_route_test")
+    assert after.status_code == 404
+
+
+def test_storage_conversations_delete_missing_is_404(storage_client: TestClient):
+    response = storage_client.delete("/storage/conversations/round_nope")
+    assert response.status_code == 404

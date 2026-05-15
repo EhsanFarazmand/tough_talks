@@ -23,12 +23,20 @@ from typing import Any, Optional
 
 from fastapi import Request
 
-from backend.core._runtime import DEFAULT_MODEL_ID, LoadConfig, load_model
+from pathlib import Path
+
+from backend.core._runtime import (
+    DEFAULT_MODEL_ID,
+    LoadConfig,
+    load_model,
+    resolve_storage_root,
+)
 
 __all__ = [
     "ModelRegistry",
     "RegistryNotReady",
     "get_registry",
+    "get_storage_root",
     "load_registry",
 ]
 
@@ -145,6 +153,32 @@ def load_registry(
         multimodal_processor=mm_processor,
         multimodal_model=mm_model,
     )
+
+
+def get_storage_root(request: Request) -> Path:
+    """FastAPI dependency — returns the app-scoped local storage root.
+
+    Phase 5 / Step 13. The storage layer is filesystem-backed (no
+    network, no DB), so a "root" is all the routes need. The path is
+    set on ``app.state.storage_root`` by the lifespan event (or by a
+    test override) and resolved via the precedence-rule in
+    :func:`backend.core._runtime.resolve_storage_root` —
+    explicit-arg > ``TOUGH_TALKS_STORAGE_ROOT`` env > repo-local default
+    (``<repo>/data/local``, gitignored).
+
+    Tests and notebooks bypass the lifespan by overriding the
+    dependency directly::
+
+        app.dependency_overrides[get_storage_root] = lambda: tmp_path
+
+    Falls back to :func:`resolve_storage_root` (env or default) when
+    the state isn't set — this lets ``uvicorn backend.api.main:app``
+    start from a clean repo without an explicit configuration step.
+    """
+    explicit = getattr(request.app.state, "storage_root", None)
+    if isinstance(explicit, (str, Path)):
+        return Path(explicit)
+    return resolve_storage_root()
 
 
 def get_registry(request: Request) -> ModelRegistry:

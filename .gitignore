@@ -51,6 +51,7 @@ recordings/
 audio_cache/
 
 # User data (sensitive — NEVER commit)
+data/local/
 data/user/
 data/vaults/
 data/conversations/

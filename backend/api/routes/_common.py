@@ -22,10 +22,12 @@ from typing import Any
 from fastapi import HTTPException, status
 
 from backend.api.deps import RegistryNotReady
+from backend.core._runtime import StorageError, StorageNotFoundError
 
 __all__ = [
     "runtime_error_to_http",
     "registry_error_to_http",
+    "storage_error_to_http",
 ]
 
 
@@ -47,6 +49,31 @@ def runtime_error_to_http(exc: Exception, *, component: str) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         detail=detail,
+    )
+
+
+def storage_error_to_http(exc: StorageError, *, component: str) -> HTTPException:
+    """Map a :class:`StorageError` to the right HTTP status.
+
+    * :class:`StorageNotFoundError` → 404 (no record on disk for the
+      given id).
+    * Any other :class:`StorageError` → 422 (validation / shape /
+      corruption — the request itself or the on-disk record was
+      malformed).
+
+    ``component`` matches the runtime component name surfaced on the
+    other routes (``"talk_dna_storage"``, ``"vault_storage"``,
+    ``"pulse_storage"``, ``"conversation_storage"``) so the frontend
+    can route diagnostics inline.
+    """
+    if isinstance(exc, StorageNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"component": component, "error": str(exc)},
+        )
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail={"component": component, "error": str(exc)},
     )
 
 

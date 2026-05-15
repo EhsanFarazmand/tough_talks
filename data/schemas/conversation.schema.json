@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Conversation",
+  "description": "One practice or live conversation round, bundled into a single file. Wraps the transcript plus the per-round intelligence artifacts (premortem, debrief, aftermath, optional emotion results). Persisted at data/local/conversations/<round_id>.json by the Step 13 storage layer. Storage is local-only; nothing is synced.",
+  "type": "object",
+  "required": ["round_id", "started_at", "transcript", "updated_at"],
+  "properties": {
+    "round_id": {
+      "type": "string",
+      "description": "Stable id for this round. Matches the round_id surfaced in pulse.round_summaries[].round_id when the round is later rolled into a pulse. Filename-safe (alnum, '_', '.', '-')."
+    },
+    "person_id": {
+      "type": "string",
+      "description": "Optional FK to PersonVault.person_id. Present for practice rounds against a known counterparty; absent for free-form drafts."
+    },
+    "person_name": {
+      "type": "string",
+      "description": "Optional display name copied from the matching PersonVault.name."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of when this round started. Used as the cross-round sort key (most-recent first) in pulse.round_summaries and the frontend round picker."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["practice", "live"],
+      "description": "How the round was conducted. 'practice' is an adversarial persona-sim round (Step 07's emit shape: speaker == 'persona' + reply); 'live' is a transcribed real conversation (Step 03's emit shape: speaker == 'other' + text). The storage layer does NOT normalise the transcript shape — downstream consumers (Steps 06 vs 09/10/11) read what they need."
+    },
+    "user_goal": {
+      "type": "string",
+      "description": "Optional. The goal the user set for this round; same string passed to /premortem and /debrief."
+    },
+    "transcript": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Round transcript, verbatim from the consumer that produced it. Storage does NOT canonicalise the shape — practice rounds carry 'persona'/'reply' entries; live rounds carry 'other'/'text' entries.",
+      "items": {
+        "type": "object",
+        "required": ["speaker"],
+        "properties": {
+          "speaker": {
+            "type": "string",
+            "enum": ["user", "persona", "other"]
+          }
+        }
+      }
+    },
+    "premortem": {
+      "type": "object",
+      "description": "Optional Step 08 output for this round (the pre-round failure scenarios). Validated by data/schemas/premortem.schema.json. Absent for live rounds that skipped the pre-mortem."
+    },
+    "debrief": {
+      "type": "object",
+      "description": "Optional Step 09 output for this round. Validated by data/schemas/debrief.schema.json."
+    },
+    "aftermath": {
+      "type": "object",
+      "description": "Optional Step 10 output for this round (plan-vs-reality comparison). Requires premortem to have run; validated by data/schemas/aftermath.schema.json."
+    },
+    "emotion_results": {
+      "type": "array",
+      "description": "Optional Step 04 outputs for Live-mode rounds. One entry per analysed chunk; validated against data/schemas/emotion_radar.schema.json by the emotion radar runtime before persistence.",
+      "items": {"type": "object"}
+    },
+    "transcript_audio_id": {
+      "type": "string",
+      "description": "Optional id of the underlying audio file (if the user opted to keep one). Audio bytes live OUTSIDE storage — files matching *.wav / *.mp3 are gitignored and the storage layer does not move them."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional free-text user notes attached to this round (e.g. 'rehearsed for tomorrow's 1-on-1')."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of the last write. Stamped by the storage layer on save when the caller omits it."
+    }
+  }
+}

@@ -35,9 +35,11 @@ from backend.api.routes import (
     persona_sim,
     premortem,
     pulse,
+    storage,
     talk_dna,
     transcription,
 )
+from backend.core._runtime import resolve_storage_root
 
 LOG = logging.getLogger(__name__)
 
@@ -67,10 +69,18 @@ async def lifespan(app: FastAPI):
     load. In every other case both variants are loaded by default and
     the registry is attached to ``app.state.registry``.
     """
+    # Resolve the storage root regardless of whether models load —
+    # the /storage/* routes are filesystem-only and stay available
+    # even on a model-skipped boot (handy for the Step 13 notebook /
+    # tests, and for ``uvicorn --reload`` smoke checks).
+    storage_root = resolve_storage_root()
+    app.state.storage_root = storage_root
+    LOG.info("Storage root: %s", storage_root)
+
     if _env_bool(_ENV_SKIP_MODEL_LOAD, default=False):
         LOG.warning(
             "TOUGH_TALKS_SKIP_MODEL_LOAD set — skipping model load. "
-            "Routes will 503 until a registry is injected."
+            "Inference routes will 503 until a registry is injected."
         )
         app.state.registry = None
         yield
@@ -129,11 +139,13 @@ async def health() -> dict:
     registry = getattr(app.state, "registry", None)
     text_loaded = bool(registry and registry.text_model is not None)
     multimodal_loaded = bool(registry and registry.multimodal_model is not None)
+    storage_root = getattr(app.state, "storage_root", None)
     return {
         "status": "ok",
         "version": "0.1.0",
         "text_model_loaded": text_loaded,
         "multimodal_model_loaded": multimodal_loaded,
+        "storage_root": str(storage_root) if storage_root is not None else None,
     }
 
 
@@ -151,3 +163,4 @@ app.include_router(
 app.include_router(
     transcription.router, prefix="/transcribe", tags=["Transcription"]
 )
+app.include_router(storage.router, prefix="/storage", tags=["Storage"])
