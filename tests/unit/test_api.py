@@ -183,14 +183,14 @@ def test_talk_dna_happy(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     )
     body = {
         "turns": [{"speaker": "user", "text": "I just feel like this is hard."}],
-        "user_id": "solmaz",
+        "user_id": "local",
         "max_new_tokens": 512,
         "prior_profile": None,
     }
     response = client.post("/talk-dna/analyze", json=body)
     assert response.status_code == 200, response.text
     assert response.json() == _TALK_DNA_OK
-    assert captured["cfg"].user_id == "solmaz"
+    assert captured["cfg"].user_id == "local"
     assert captured["cfg"].max_new_tokens == 512
     assert captured["turns"] == body["turns"]
 
