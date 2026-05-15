@@ -33,9 +33,12 @@ from backend.core._runtime.persona_sim import (
     RETRY_SAMPLING,
     PersonaReplyError,
     PersonaSimConfig,
+    _CONCEDE_SIGNALS,
     _RESISTANCE_TYPE_SYNONYMS,
+    _SILENT_WORD_CEILING,
     _clamp_unit,
     _coerce_persona_reply_payload,
+    _demote_silent_for_long_reply,
     _normalize_resistance_type,
     _resolve_inner_profile,
     _resolve_persona_name,
@@ -168,6 +171,101 @@ def test_synonym_map_values_all_in_enum():
             f"synonym {synonym!r} maps to {canonical!r}, "
             f"which is not in ALLOWED_RESISTANCE_TYPES"
         )
+
+
+# ---------------------------------------------------------------------------
+# silent-vs-content demotion (Step 14 fix)
+# ---------------------------------------------------------------------------
+# Step 07's rule: ``silent`` is for one-word withdrawals. The prompt
+# teaches it but Step 14's Colab surfaced the same failure — an
+# 11-word two-sentence reply ("Deal. I'll send the plan over by
+# tomorrow morning.") labelled ``silent``. The coercer enforces the
+# rule in code. Mirrors the defence-in-depth shape of Step 09's
+# ``_APOLOGY_CUE_RE`` (prompt teaches, code enforces).
+
+
+def test_demote_silent_pass_through_when_not_silent():
+    # Coercer only fires on silent — every other label must round-trip.
+    for rt in ALLOWED_RESISTANCE_TYPES:
+        if rt == "silent":
+            continue
+        assert _demote_silent_for_long_reply(rt, "Some long multi-sentence reply that mentions deal.") == rt
+
+
+def test_demote_silent_leaves_short_replies_alone():
+    # ≤_SILENT_WORD_CEILING words: silent is legitimately one-word /
+    # terse, leave it alone. Test both empty-ish and ceiling-boundary
+    # cases.
+    assert _demote_silent_for_long_reply("silent", "Hmm.") == "silent"
+    assert _demote_silent_for_long_reply("silent", "I don't know.") == "silent"
+    # Boundary: exactly the ceiling should still be silent.
+    ceiling_reply = " ".join(["word"] * _SILENT_WORD_CEILING)
+    assert _demote_silent_for_long_reply("silent", ceiling_reply) == "silent"
+
+
+def test_demote_silent_to_concede_on_acceptance_signal():
+    # The exact Step 14 failure case — multi-sentence reply opening with
+    # "Deal." should demote to concede.
+    reply = "Deal. I'll send the plan over by tomorrow morning."
+    assert _demote_silent_for_long_reply("silent", reply) == "concede"
+    # Additional concede signals should also fire.
+    assert _demote_silent_for_long_reply(
+        "silent", "Sounds good to me. I can have it done by Friday for you."
+    ) == "concede"
+    assert _demote_silent_for_long_reply(
+        "silent", "Agreed. Let me know what you need from me next week."
+    ) == "concede"
+
+
+def test_demote_silent_to_deflect_on_long_reply_without_concede_signal():
+    # Long reply, no acceptance phrase — fall back to deflect rather
+    # than guessing wrong. The point of the fallback is: we know
+    # silent is wrong on a multi-sentence reply, but without an
+    # explicit acceptance signal we don't claim the persona conceded.
+    reply = (
+        "I need to think about this more carefully before I give you "
+        "an answer. There are several factors I haven't fully considered yet."
+    )
+    assert _demote_silent_for_long_reply("silent", reply) == "deflect"
+
+
+def test_demote_silent_ignores_ambiguous_acceptance_words():
+    # Bare "ok" / "yes" are too ambiguous to be concede signals — they
+    # show up in deflect / counter_attack replies too. A long reply
+    # containing only such weak markers should still demote to deflect.
+    reply = "OK but I think you're missing the point entirely here, and yes, that's a problem."
+    assert _demote_silent_for_long_reply("silent", reply) == "deflect"
+
+
+def test_demote_silent_handles_non_string_reply():
+    # Defensive: a non-string or empty reply shouldn't crash the helper.
+    assert _demote_silent_for_long_reply("silent", "") == "silent"
+    assert _demote_silent_for_long_reply("silent", None) == "silent"  # type: ignore[arg-type]
+    assert _demote_silent_for_long_reply("silent", "   ") == "silent"
+
+
+def test_concede_signals_are_lowercase():
+    # The matcher uses ``reply.lower()`` so all signals must be lower-case
+    # to actually fire.
+    for signal in _CONCEDE_SIGNALS:
+        assert signal == signal.lower(), f"signal {signal!r} must be lower-case"
+
+
+def test_coerce_persona_reply_applies_silent_demotion():
+    # End-to-end through the coercer: a payload the model would have
+    # emitted on Step 14's turn 3 round-trips into a ``concede`` label,
+    # not ``silent``. The original raw_rt comes from the model unchanged
+    # — the coercer is what enforces the rule.
+    cfg = PersonaSimConfig(persona_profile={"name": "Jamie"})
+    payload = {
+        "reply": "Deal. I'll send the plan over by tomorrow morning.",
+        "resistance_type": "silent",
+        "escalation_level": 0.3,
+    }
+    out = _coerce_persona_reply_payload(payload, cfg=cfg)
+    assert out["resistance_type"] == "concede"
+    assert out["reply"] == payload["reply"]
+    assert out["persona_name"] == "Jamie"
 
 
 # ---------------------------------------------------------------------------

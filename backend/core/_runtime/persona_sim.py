@@ -192,6 +192,75 @@ def _normalize_resistance_type(value: Any) -> Optional[str]:
     )
 
 
+# Word-count ceiling above which ``silent`` is structurally implausible.
+# Per Step 07's rule: ``silent`` is for one-word withdrawals. We allow a
+# small slack (≤5 words) so a terse pushback like "no, that's not fair."
+# can still be labelled ``silent`` if the model chose to — the demotion
+# only fires on the clearly multi-sentence case (Step 14 surfaced
+# ``silent`` on an 11-word two-sentence reply that opened with "Deal.").
+_SILENT_WORD_CEILING: int = 5
+
+# Acceptance phrases that, when present in a reply the model labelled
+# ``silent``, indicate the actual resistance type is ``concede``. Each
+# entry is specific enough that bare ``"ok"`` / ``"yes"`` won't trigger
+# (those are too ambiguous — they show up in deflect / counter_attack
+# replies too). The matcher is case-insensitive substring.
+_CONCEDE_SIGNALS: tuple[str, ...] = (
+    "deal",
+    "agreed",
+    "you got it",
+    "sounds good",
+    "i can do that",
+    "i'll commit",
+    "let's do it",
+    "i'm in",
+    "i'll send",
+    "i'll have it",
+)
+
+
+def _demote_silent_for_long_reply(resistance_type: str, reply: str) -> str:
+    """Demote ``silent`` to a content-appropriate label on long replies.
+
+    Step 07's rule: ``silent`` is for one-word withdrawals; multi-sentence
+    replies pick a different label. The prompt teaches the rule but
+    Step 14's Colab run surfaced the same failure mode the prompt rule
+    was supposed to catch — the model labelled an 11-word two-sentence
+    reply (``"Deal. I'll send the plan over by tomorrow morning."``) as
+    ``silent``. Same defence-in-depth shape as Step 09's
+    ``_APOLOGY_CUE_RE`` and Step 10's ``_TRANSCRIPT_META_PREFIX_RE``:
+    prompt teaches the model, code enforces the contract.
+
+    Logic:
+
+    * If ``resistance_type`` isn't ``silent``, return unchanged — this
+      coercer only fires on the silent-vs-content mismatch.
+    * If the reply has ``≤ _SILENT_WORD_CEILING`` words, leave ``silent``
+      alone (terse replies legitimately carry that label).
+    * Otherwise inspect the reply for explicit concede signals; if any
+      match, demote to ``concede``. The signals are specific phrases
+      (``"deal"``, ``"sounds good"``, etc.) — bare ``"ok"`` / ``"yes"``
+      are excluded because they show up in deflect / counter_attack
+      replies too.
+    * No concede signal on a long reply → demote to ``deflect``. That's
+      the safest non-silent default (represents continued resistance
+      without overclaiming the persona is conceding).
+
+    The function is intentionally pure — no model call, no I/O — so
+    it can also re-coerce older saved bundles deterministically.
+    """
+    if resistance_type != "silent":
+        return resistance_type
+    if not isinstance(reply, str) or not reply.strip():
+        return resistance_type
+    if len(reply.split()) <= _SILENT_WORD_CEILING:
+        return resistance_type
+    lowered = reply.lower()
+    if any(signal in lowered for signal in _CONCEDE_SIGNALS):
+        return "concede"
+    return "deflect"
+
+
 # Light sampling for the retry path — same rationale as the
 # talk_dna / person_vault / emotion retries. Pinned by the unit test.
 RETRY_SAMPLING: dict[str, Any] = {"temperature": 0.3, "top_p": 0.9, "top_k": 64}
@@ -486,6 +555,12 @@ def _coerce_persona_reply_payload(
             f"resistance_type not in enum: {raw_rt!r}; "
             f"allowed: {ALLOWED_RESISTANCE_TYPES}"
         )
+    # Defence-in-depth: enforce Step 07's "silent is for one-word
+    # withdrawals" rule in code, not just in the prompt. Step 14 Colab
+    # run surfaced a multi-sentence reply mislabelled ``silent`` —
+    # demote to a content-appropriate label so downstream consumers
+    # (debrief / aftermath) read the correct shape.
+    resistance_type = _demote_silent_for_long_reply(resistance_type, reply)
 
     escalation = _clamp_unit(payload.get("escalation_level", 0.0))
 
