@@ -83,6 +83,7 @@ sentinels when missing so the prompt template is never malformed.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -237,6 +238,64 @@ _NO_DEBRIEF_SENTINEL = (
     "(no post-round debrief provided — base the aftermath on the "
     "pre-mortem and transcript alone)"
 )
+
+# Bracket-prefix render-format leak in ``evidence``. The Step 10 first
+# Colab run had both ``enable_thinking`` branches paste the transcript's
+# render-format bracket (e.g. ``"Jamie (resistance=deflect,
+# escalation=0.60): I told you..."``) into ``evidence``, even with the
+# prompt asking for "a quote or a turn pointer". Defence-in-depth:
+# strip the prefix in code AS WELL AS in the prompt. Two recognised
+# shapes match what :func:`format_practice_transcript` renders:
+#
+#   * ``Jamie (resistance=deflect, escalation=0.60)`` — persona turn,
+#     with or without the surrounding ``[...]``, with or without a
+#     trailing colon. ``escalation=...`` is optional because
+#     :func:`format_practice_transcript` drops it when the turn has
+#     no numeric escalation level.
+#   * ``[USER 1]`` / ``[OTHER]`` — bracket-required turns.
+#
+# The regex only strips when one of those exact shapes is present at
+# the start of the string. A natural turn pointer the model wrote in
+# its own words (e.g. ``"Jamie's first reply — ..."``) is left
+# untouched. Same defence-in-depth pattern as Step 09's
+# ``_APOLOGY_CUE_RE``: enforce the system contract in code so a
+# future model regression cannot leak the render format back into
+# the aftermath payload.
+_TRANSCRIPT_META_PREFIX_RE: re.Pattern[str] = re.compile(
+    r"""^\s*
+    (?:
+        # Persona-style: optional outer bracket + name +
+        # ( resistance = X [, escalation = Y.YY ] )
+        \[?\s*
+        [A-Za-z][\w'.\- ]{0,40}?
+        \s*
+        \(\s* resistance \s* = \s* \w+ \s*
+        (?:, \s* escalation \s* = \s* [\d.]+ \s*)?
+        \)
+        \s*\]?
+        |
+        # USER N / OTHER form: brackets required so a stray
+        # ``USER 2`` in the middle of a quote is not eaten.
+        \[ \s* (?: USER \s+ \d+ | OTHER ) \s* \]
+    )
+    \s* [:\-—]? \s*
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+
+
+def _strip_transcript_meta_prefix(text: str) -> str:
+    """Strip a leaked transcript render-format bracket from the start.
+
+    The runtime's :func:`format_practice_transcript` renders each turn
+    with a metadata bracket the model occasionally copies verbatim
+    into ``evidence``. This helper removes that bracket (and a single
+    optional separator after it) when present at the start of the
+    string and leaves the rest alone. Returns the cleaned text
+    stripped of leading / trailing whitespace.
+    """
+    cleaned = _TRANSCRIPT_META_PREFIX_RE.sub("", text, count=1).strip()
+    return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -606,7 +665,18 @@ def _coerce_scenario_outcome(raw: Any, *, scenario_input: dict, scenario_id: int
     if match_quality == "did_not_occur":
         evidence = ""
     else:
-        if not evidence_raw:
+        # Strip any leaked transcript render-format bracket BEFORE the
+        # empty-after-strip check — a string like
+        # ``"Jamie (resistance=deflect, escalation=0.60):"`` looks
+        # non-empty until the prefix strips away to nothing, at which
+        # point it's effectively an empty evidence and should downgrade
+        # the same way an explicitly empty string does.
+        cleaned_evidence: Optional[str] = (
+            _strip_transcript_meta_prefix(evidence_raw)
+            if evidence_raw
+            else None
+        )
+        if not cleaned_evidence:
             LOG.info(
                 "Scenario %d emitted match_quality=%r with empty evidence — "
                 "downgrading to did_not_occur",
@@ -616,7 +686,7 @@ def _coerce_scenario_outcome(raw: Any, *, scenario_input: dict, scenario_id: int
             match_quality = "did_not_occur"
             evidence = ""
         else:
-            evidence = _cap(evidence_raw, limit=_MAX_EVIDENCE_CHARS)
+            evidence = _cap(cleaned_evidence, limit=_MAX_EVIDENCE_CHARS)
 
     materialized = match_quality != "did_not_occur"
 

@@ -49,6 +49,7 @@ from backend.core._runtime.aftermath import (
     _normalize_unforeseen_kind,
     _scenario_predicted_resistance,
     _scenario_title,
+    _strip_transcript_meta_prefix,
     build_aftermath_messages,
     format_debrief_block,
     format_premortem_block,
@@ -456,6 +457,138 @@ def test_coerce_scenario_outcome_downgrades_empty_evidence_to_did_not_occur():
         "materialized": True,
         "evidence": "   ",  # empty after strip
         "notes": "Claimed a direct hit with nothing to back it up.",
+    }
+    out = _coerce_scenario_outcome(raw, scenario_input=scenario_input, scenario_id=1)
+    assert out["match_quality"] == "did_not_occur"
+    assert out["materialized"] is False
+    assert out["evidence"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Transcript-meta-prefix strip
+# ---------------------------------------------------------------------------
+
+
+def test_strip_transcript_meta_prefix_removes_persona_bracket():
+    """Step 10 Run 1: both ``enable_thinking`` branches pasted the
+    transcript's render-format bracket into ``evidence``. Defence-in-
+    depth strip removes the prefix on coercion."""
+    raw = (
+        "Jamie (resistance=deflect, escalation=0.60): "
+        "I told you we were short on time."
+    )
+    assert _strip_transcript_meta_prefix(raw) == "I told you we were short on time."
+
+
+def test_strip_transcript_meta_prefix_handles_outer_bracket_form():
+    """The runtime renders persona turns as
+    ``[Jamie (resistance=deflect, escalation=0.60)]`` — the model
+    occasionally copies the brackets along with the metadata."""
+    raw = (
+        "[Jamie (resistance=guilt_trip, escalation=0.70)] "
+        "Don't put this on me."
+    )
+    assert _strip_transcript_meta_prefix(raw) == "Don't put this on me."
+
+
+def test_strip_transcript_meta_prefix_handles_no_colon_no_outer_bracket():
+    """The two real Step 10 outputs differed in whether they kept the
+    outer ``[...]`` and whether they added a trailing colon. Both
+    shapes must strip."""
+    raw = (
+        "Jamie (resistance=counter_attack, escalation=0.75) "
+        "Wednesday EOD is tight."
+    )
+    assert _strip_transcript_meta_prefix(raw) == "Wednesday EOD is tight."
+
+
+def test_strip_transcript_meta_prefix_handles_persona_only_resistance():
+    """``format_practice_transcript`` drops ``escalation=...`` when the
+    turn has no numeric escalation level. The regex still recognises
+    the resistance-only form."""
+    raw = "Jamie (resistance=deflect): I told you we were short on time."
+    assert _strip_transcript_meta_prefix(raw) == "I told you we were short on time."
+
+
+def test_strip_transcript_meta_prefix_handles_user_bracket():
+    raw = "[USER 2] Can we agree the staging data lands by Wednesday EOD?"
+    assert (
+        _strip_transcript_meta_prefix(raw)
+        == "Can we agree the staging data lands by Wednesday EOD?"
+    )
+
+
+def test_strip_transcript_meta_prefix_handles_other_bracket():
+    raw = "[OTHER] Some transcribed reply."
+    assert _strip_transcript_meta_prefix(raw) == "Some transcribed reply."
+
+
+def test_strip_transcript_meta_prefix_preserves_natural_turn_pointers():
+    """A natural turn pointer the model wrote in its own words is not
+    a render-format bracket and must NOT be stripped. The prompt
+    explicitly encourages this shape; stripping it would silently
+    eat the model's good-shape evidence."""
+    raw = (
+        "Jamie's first reply — 'I told you we were short on time.' "
+        "She ran the predicted deflection."
+    )
+    assert _strip_transcript_meta_prefix(raw) == raw
+
+    raw2 = (
+        "USER 2 followed up with the hard deadline ask; Jamie's reply "
+        "began 'Wednesday EOD is tight'."
+    )
+    assert _strip_transcript_meta_prefix(raw2) == raw2
+
+
+def test_strip_transcript_meta_prefix_preserves_bare_quotes():
+    """Pure quote evidence without any prefix is the simplest valid
+    shape and must pass through unchanged."""
+    raw = "I told you we were short on time."
+    assert _strip_transcript_meta_prefix(raw) == raw
+
+
+def test_strip_transcript_meta_prefix_returns_empty_when_only_prefix():
+    """If the model emits ONLY the bracket prefix (no spoken content),
+    the strip leaves an empty string — which the coercer treats as
+    'no real evidence' and downgrades the scenario to did_not_occur."""
+    raw = "Jamie (resistance=deflect, escalation=0.60):"
+    assert _strip_transcript_meta_prefix(raw) == ""
+
+
+def test_coerce_scenario_outcome_strips_transcript_prefix_from_evidence():
+    """End-to-end: the prefix-leak shape from Step 10 Run 1 is cleaned
+    by ``_coerce_scenario_outcome`` without changing match_quality
+    when real content follows the bracket."""
+    scenario_input = _three_scenarios()[0]
+    raw = {
+        "match_quality": "direct_hit",
+        "materialized": True,
+        "evidence": (
+            "Jamie (resistance=deflect, escalation=0.60): "
+            "I told you we were short on time. It's not a personal failing."
+        ),
+        "notes": "Direct hit on the predicted deflection.",
+    }
+    out = _coerce_scenario_outcome(raw, scenario_input=scenario_input, scenario_id=1)
+    assert out["match_quality"] == "direct_hit"
+    assert out["materialized"] is True
+    assert out["evidence"].startswith("I told you we were short on time.")
+    assert "resistance=" not in out["evidence"]
+    assert "escalation=" not in out["evidence"]
+
+
+def test_coerce_scenario_outcome_downgrades_when_evidence_is_only_prefix():
+    """If the model emits a direct_hit with evidence that is ONLY the
+    bracket prefix (no actual spoken content), the strip leaves the
+    empty string and the entry downgrades to did_not_occur — same
+    path as a completely empty evidence string."""
+    scenario_input = _three_scenarios()[0]
+    raw = {
+        "match_quality": "direct_hit",
+        "materialized": True,
+        "evidence": "Jamie (resistance=deflect, escalation=0.60):",
+        "notes": "Tried to claim a hit but had nothing to back it up.",
     }
     out = _coerce_scenario_outcome(raw, scenario_input=scenario_input, scenario_id=1)
     assert out["match_quality"] == "did_not_occur"
