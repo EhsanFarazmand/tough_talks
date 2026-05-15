@@ -1050,3 +1050,87 @@ def test_storage_conversations_full_lifecycle(storage_client: TestClient):
 def test_storage_conversations_delete_missing_is_404(storage_client: TestClient):
     response = storage_client.delete("/storage/conversations/round_nope")
     assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Static frontend mount — Step 14
+# ---------------------------------------------------------------------------
+# The mount is registered at import time (see backend/api/main.py) so the
+# repo-default frontend dir is the one being served here. Tests check the
+# routing contract — not the asset contents — so a frontend file rename or
+# style refactor doesn't break the test suite.
+
+
+def test_root_redirects_to_app(client: TestClient):
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code in (307, 308), response.status_code
+    assert response.headers["location"] == "/app/"
+
+
+def test_app_index_serves_app_html(client: TestClient):
+    response = client.get("/app/")
+    assert response.status_code == 200, response.text
+    assert "text/html" in response.headers["content-type"]
+    # The body should look like a Tough Talks HTML page — we don't pin
+    # the title verbatim (it might evolve) so check for the brand string.
+    assert "Tough Talks" in response.text
+
+
+def test_app_static_assets_are_served(client: TestClient):
+    # The three files the working app shell needs.
+    for path in ("/app/app.html", "/app/app.js", "/app/app.css"):
+        response = client.get(path)
+        assert response.status_code == 200, f"{path}: {response.status_code}"
+        assert len(response.text) > 0
+
+
+def test_app_serves_concept_page(client: TestClient):
+    # The concept landing stays reachable as a sibling file under /app.
+    response = client.get("/app/tough_talks_concept.html")
+    assert response.status_code == 200, response.text
+    assert "text/html" in response.headers["content-type"]
+
+
+def test_app_unknown_file_returns_404(client: TestClient):
+    response = client.get("/app/this-file-does-not-exist.css")
+    assert response.status_code == 404
+
+
+def test_health_surfaces_frontend_dir(client: TestClient):
+    # Lifespan didn't run under TestClient — main.py's module-level mount
+    # already registered the StaticFiles, and the explicit /app/ route
+    # falls back to resolve_frontend_dir() when state isn't set. /health
+    # reads state directly, so we set it here to mirror the lifespan
+    # behaviour and confirm the field is exposed.
+    from backend.api.main import resolve_frontend_dir
+
+    app.state.frontend_dir = resolve_frontend_dir()
+    try:
+        response = client.get("/health")
+    finally:
+        app.state.frontend_dir = None
+    assert response.status_code == 200
+    body = response.json()
+    assert "frontend_dir" in body
+    assert "frontend_present" in body
+    assert body["frontend_present"] is True
+
+
+def test_resolve_frontend_dir_env_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    from backend.api.main import ENV_FRONTEND_DIR, resolve_frontend_dir
+
+    monkeypatch.setenv(ENV_FRONTEND_DIR, str(tmp_path))
+    resolved = resolve_frontend_dir()
+    assert resolved == tmp_path
+
+
+def test_resolve_frontend_dir_explicit_override_wins(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    from backend.api.main import ENV_FRONTEND_DIR, resolve_frontend_dir
+
+    monkeypatch.setenv(ENV_FRONTEND_DIR, str(tmp_path / "from_env"))
+    explicit = tmp_path / "explicit"
+    explicit.mkdir()
+    resolved = resolve_frontend_dir(override=explicit)
+    assert resolved == explicit

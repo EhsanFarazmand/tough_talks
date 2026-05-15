@@ -15,6 +15,13 @@ The lifespan event eagerly loads both Gemma 4 variants (text-only +
 multimodal) before serving the first request — see ``ModelRegistry`` in
 :mod:`backend.api.deps`. Notebooks and tests skip the lifespan and
 inject a ready-made registry via ``app.dependency_overrides``.
+
+Phase 6 / Step 14 also mounts the vanilla-JS frontend at ``/app`` from
+:func:`resolve_frontend_dir` (``<repo>/frontend`` by default; override
+via ``TOUGH_TALKS_FRONTEND_DIR``). Same-origin serving means the
+working app calls every ``/storage/*`` and ``/persona/*`` route via
+relative URLs — no CORS gymnastics — and the concept landing page stays
+reachable at ``/app/tough_talks_concept.html``.
 """
 
 from __future__ import annotations
@@ -22,9 +29,13 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.api.deps import load_registry
 from backend.api.routes import (
@@ -50,6 +61,13 @@ LOG = logging.getLogger(__name__)
 _ENV_INCLUDE_TEXT = "TOUGH_TALKS_INCLUDE_TEXT"
 _ENV_INCLUDE_MULTIMODAL = "TOUGH_TALKS_INCLUDE_MULTIMODAL"
 _ENV_SKIP_MODEL_LOAD = "TOUGH_TALKS_SKIP_MODEL_LOAD"
+ENV_FRONTEND_DIR = "TOUGH_TALKS_FRONTEND_DIR"
+
+# Repo-default frontend dir — sibling of ``backend/``. Resolved at
+# import time so the StaticFiles mount can be registered before any
+# request reaches the app.
+DEFAULT_FRONTEND_DIR: Path = Path(__file__).resolve().parents[2] / "frontend"
+APP_HTML_NAME = "app.html"
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -57,6 +75,30 @@ def _env_bool(name: str, default: bool) -> bool:
     if raw is None:
         return default
     return raw.strip().lower() not in {"0", "false", "no", "off", ""}
+
+
+def resolve_frontend_dir(*, override: Optional[Path] = None) -> Path:
+    """Resolve the static-frontend directory the ``/app`` mount serves.
+
+    Precedence (highest wins):
+
+    1. Explicit ``override`` arg (notebooks / tests).
+    2. ``TOUGH_TALKS_FRONTEND_DIR`` env var (packaged deploys that ship
+       the static bundle outside the repo).
+    3. ``<repo>/frontend`` — the repo-default checked-in location.
+
+    Returns the path regardless of whether it exists. The lifespan
+    event logs a warning when the resolved dir is missing; the mount
+    is only registered when the dir is actually present, so a missing
+    frontend doesn't crash the API — every ``/app/...`` request just
+    404s through the FastAPI router fallback instead.
+    """
+    if override is not None:
+        return Path(override)
+    env = os.getenv(ENV_FRONTEND_DIR)
+    if env:
+        return Path(env)
+    return DEFAULT_FRONTEND_DIR
 
 
 @asynccontextmanager
@@ -76,6 +118,19 @@ async def lifespan(app: FastAPI):
     storage_root = resolve_storage_root()
     app.state.storage_root = storage_root
     LOG.info("Storage root: %s", storage_root)
+
+    # Resolve the frontend dir for the /app mount. The mount itself is
+    # registered at import time (below) — this only updates the path
+    # surfaced by /health and used by the explicit /app/ index route.
+    frontend_dir = resolve_frontend_dir()
+    app.state.frontend_dir = frontend_dir
+    if frontend_dir.is_dir():
+        LOG.info("Frontend dir: %s", frontend_dir)
+    else:
+        LOG.warning(
+            "Frontend dir does not exist: %s — /app/* routes will 404",
+            frontend_dir,
+        )
 
     if _env_bool(_ENV_SKIP_MODEL_LOAD, default=False):
         LOG.warning(
@@ -140,13 +195,82 @@ async def health() -> dict:
     text_loaded = bool(registry and registry.text_model is not None)
     multimodal_loaded = bool(registry and registry.multimodal_model is not None)
     storage_root = getattr(app.state, "storage_root", None)
+    frontend_dir = getattr(app.state, "frontend_dir", None)
+    frontend_present = bool(frontend_dir and Path(frontend_dir).is_dir())
     return {
         "status": "ok",
         "version": "0.1.0",
         "text_model_loaded": text_loaded,
         "multimodal_model_loaded": multimodal_loaded,
         "storage_root": str(storage_root) if storage_root is not None else None,
+        "frontend_dir": str(frontend_dir) if frontend_dir is not None else None,
+        "frontend_present": frontend_present,
     }
+
+
+# --- Frontend (Phase 6 / Step 14) -----------------------------------------
+# The order matters here. Explicit routes for ``/`` and ``/app/`` are
+# registered BEFORE the ``StaticFiles`` mount at ``/app`` so FastAPI's
+# router resolves the index hit to ``app.html`` (not 404, which is what
+# ``StaticFiles(html=False)`` would emit for a directory listing). The
+# mount then handles every ``/app/<file>`` request — including
+# ``tough_talks_concept.html``, ``app.css``, ``app.js``.
+#
+# We deliberately keep ``html=False`` on the mount. With ``html=True``
+# StaticFiles would try to serve ``index.html`` from the dir, and we
+# don't ship one (the working app lives in ``app.html`` so the concept
+# page stays the marketing landing — same dir, different files). The
+# explicit route is the cleanest way to make ``/app/`` resolve to the
+# right file without renaming or shadowing.
+
+
+@app.get("/", include_in_schema=False)
+async def root_redirect() -> RedirectResponse:
+    """Send root visitors to the working app at ``/app/``.
+
+    307 (not 308) preserves the method on the redirect — important for
+    the rare case where a client POSTs to ``/``. The ``/`` path doesn't
+    appear in the OpenAPI doc so the API surface stays clean.
+    """
+    return RedirectResponse(url="/app/", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+
+@app.get("/app/", include_in_schema=False)
+async def serve_app_index(request: Request) -> FileResponse:
+    """Serve ``app.html`` as the ``/app/`` index.
+
+    Reads ``app.state.frontend_dir`` first (set by the lifespan event
+    or by a test override) and falls back to :func:`resolve_frontend_dir`
+    when the state isn't populated — same shape as ``get_storage_root``
+    in ``backend/api/deps.py``.
+    """
+    frontend_dir = getattr(request.app.state, "frontend_dir", None) or resolve_frontend_dir()
+    target = Path(frontend_dir) / APP_HTML_NAME
+    if not target.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": f"{APP_HTML_NAME} not found in frontend dir {frontend_dir}",
+            },
+        )
+    return FileResponse(str(target), media_type="text/html")
+
+
+_frontend_dir_at_import = resolve_frontend_dir()
+if _frontend_dir_at_import.is_dir():
+    app.mount(
+        "/app",
+        StaticFiles(directory=str(_frontend_dir_at_import), html=False),
+        name="frontend",
+    )
+else:
+    LOG.warning(
+        "Frontend dir missing at import time (%s) — /app/<file> requests "
+        "will 404 until the dir exists and the app reloads. Set "
+        "%s to point at the static bundle for packaged deploys.",
+        _frontend_dir_at_import,
+        ENV_FRONTEND_DIR,
+    )
 
 
 # --- Routers ---------------------------------------------------------------

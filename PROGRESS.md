@@ -1,7 +1,7 @@
 # Implementation Progress
 
 Last updated: 2026-05-15  
-Current step: **Step 13 — Local JSON storage schema** (✅ done — verified 14/14 on Colab)
+Current step: **Step 14 — Frontend integration** (🔵 active — awaiting Colab verification)
 
 ---
 
@@ -47,7 +47,7 @@ Current step: **Step 13 — Local JSON storage schema** (✅ done — verified 1
 
 | Step | Title | Status | Notebook | Notes |
 |------|-------|--------|----------|-------|
-| 14 | Connect frontend to backend | ⬜ Pending | `notebooks/phase6/step14_integration.ipynb` | |
+| 14 | Connect frontend to backend | 🔵 Active | `notebooks/phase6/step14_integration.ipynb` | Vanilla-JS working app at `frontend/app.html` + `app.js` + `app.css` wires every backend endpoint via same-origin relative URLs. `backend/api/main.py` adds `resolve_frontend_dir()` (env override `TOUGH_TALKS_FRONTEND_DIR`), a `StaticFiles` mount at `/app`, a `GET /` → `/app/` redirect, and an explicit `GET /app/` route that serves `app.html`. The concept landing stays reachable at `/app/tough_talks_concept.html`. `/health` now surfaces `frontend_dir` + `frontend_present`. The integration notebook drives the full Practice flow against a real Gemma 4 (multimodal-only per the T4 rule): static-asset checks → `/vault/build` + save → `/talk-dna/analyze` + save → `/premortem` → 3 × `/persona/reply` with rolling history → `/debrief` → `/aftermath` → save bundled conversation → synthesise round 2 → `/pulse` over 2 rounds + save → audio routes via gTTS-synthesised clip → on-disk tree print → final unconditional pass/fail table (same shape as Steps 12/13). New unit tests in `tests/unit/test_api.py` cover the static mount: `/` redirects, `/app/` serves `app.html`, asset files reachable, missing file 404, `/health` surfaces frontend fields, and `resolve_frontend_dir` env-override / explicit-override precedence. Awaiting Colab verification. |
 | 15 | End-to-end demo recording | ⬜ Pending | — | |
 
 ---

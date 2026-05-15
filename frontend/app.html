@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tough Talks — App</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<nav class="tt-nav">
+  <span class="tt-logo">Tough Talks</span>
+  <div class="tt-nav-links">
+    <a href="#vault">Person</a>
+    <a href="#talk-dna">Talk DNA</a>
+    <a href="#premortem">Pre-Mortem</a>
+    <a href="#practice">Practice</a>
+    <a href="#live">Live</a>
+    <a href="#insights">Insights</a>
+    <a href="tough_talks_concept.html" class="tt-nav-secondary">Concept</a>
+  </div>
+  <div class="tt-health" id="tt-health">
+    <span class="tt-dot" data-state="unknown"></span>
+    <span class="tt-health-text">checking…</span>
+  </div>
+</nav>
+
+<main class="tt-app">
+
+  <section class="tt-hero">
+    <span class="tt-eyebrow">Phase 6 · Step 14 · Frontend Integration</span>
+    <h1>Practice the conversation. <em>Before it happens.</em></h1>
+    <p class="tt-hero-sub">Wires every Phase 1–4 component to a working UI. All processing local; nothing leaves the device.</p>
+  </section>
+
+  <section class="tt-settings">
+    <div class="tt-settings-row">
+      <label>API base URL</label>
+      <input id="settings-base-url" type="text" placeholder="empty = same origin" />
+      <button id="settings-base-url-save" class="tt-btn-ghost">Save</button>
+    </div>
+    <div class="tt-settings-row">
+      <label>User goal</label>
+      <textarea id="settings-user-goal" rows="2" placeholder="What do you want to achieve in this conversation?"></textarea>
+    </div>
+  </section>
+
+  <!-- PERSON VAULT -->
+  <section class="tt-card" id="vault">
+    <header class="tt-card-header">
+      <h2>Person Vault</h2>
+      <span class="tt-card-tag" data-color="gold">Step 6</span>
+    </header>
+    <div class="tt-grid-2">
+      <div>
+        <label class="tt-label">Existing profiles</label>
+        <select id="vault-existing" class="tt-select">
+          <option value="">— pick a stored vault —</option>
+        </select>
+        <button id="vault-refresh" class="tt-btn-ghost">Refresh list</button>
+        <button id="vault-load" class="tt-btn">Load selected</button>
+        <pre id="vault-preview" class="tt-preview"></pre>
+      </div>
+      <div>
+        <label class="tt-label">Build a new profile from a transcript</label>
+        <input id="vault-name" type="text" placeholder="Name (e.g. Jamie)" />
+        <input id="vault-rel" type="text" placeholder="Relationship type (colleague, partner, parent…)" />
+        <textarea id="vault-transcript" rows="6" placeholder="Paste a transcript. One turn per line, 'speaker: text'. Counterparty lines should start with 'other:' or the person's name."></textarea>
+        <div class="tt-row-buttons">
+          <button id="vault-build" class="tt-btn-primary">Build profile</button>
+          <button id="vault-save" class="tt-btn" disabled>Save to storage</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TALK DNA -->
+  <section class="tt-card" id="talk-dna">
+    <header class="tt-card-header">
+      <h2>Talk DNA</h2>
+      <span class="tt-card-tag" data-color="blue">Step 5</span>
+    </header>
+    <div class="tt-grid-2">
+      <div>
+        <label class="tt-label">Current profile</label>
+        <input id="talkdna-user-id" type="text" value="local" />
+        <button id="talkdna-load" class="tt-btn-ghost">Load from storage</button>
+        <pre id="talkdna-preview" class="tt-preview"></pre>
+      </div>
+      <div>
+        <label class="tt-label">Refresh from a fresh transcript</label>
+        <textarea id="talkdna-transcript" rows="6" placeholder="Paste a transcript to re-analyse. Same shape as the Vault input."></textarea>
+        <div class="tt-row-buttons">
+          <button id="talkdna-analyze" class="tt-btn-primary">Analyse</button>
+          <button id="talkdna-save" class="tt-btn" disabled>Save to storage</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRE-MORTEM -->
+  <section class="tt-card" id="premortem">
+    <header class="tt-card-header">
+      <h2>Pre-Mortem</h2>
+      <span class="tt-card-tag" data-color="red">Step 8</span>
+    </header>
+    <div>
+      <label class="tt-label">Conversation description</label>
+      <textarea id="premortem-desc" rows="3" placeholder="Describe the upcoming conversation in 1–3 sentences. What's the topic, the stakes, what you want?"></textarea>
+      <div class="tt-row-buttons">
+        <button id="premortem-run" class="tt-btn-primary">Generate 3 failure scenarios</button>
+      </div>
+      <div id="premortem-scenarios" class="tt-scenarios"></div>
+    </div>
+  </section>
+
+  <!-- PRACTICE ROUND -->
+  <section class="tt-card" id="practice">
+    <header class="tt-card-header">
+      <h2>Practice Round</h2>
+      <span class="tt-card-tag" data-color="purple">Step 7 → 9 → 10</span>
+    </header>
+    <div class="tt-practice-status">
+      <span id="practice-status-text">Pick a person and goal above, then start a round.</span>
+      <span id="practice-round-id" class="tt-mono"></span>
+    </div>
+    <div id="practice-chat" class="tt-chat"></div>
+    <div class="tt-chat-input">
+      <textarea id="practice-user-input" rows="2" placeholder="Type your next line…"></textarea>
+      <div class="tt-row-buttons">
+        <button id="practice-send" class="tt-btn-primary">Send turn</button>
+        <button id="practice-start" class="tt-btn">Start new round</button>
+        <button id="practice-end" class="tt-btn" disabled>End round → Debrief</button>
+      </div>
+    </div>
+    <div id="practice-debrief" class="tt-subcard tt-hidden">
+      <h3>Debrief</h3>
+      <pre id="practice-debrief-body" class="tt-preview"></pre>
+      <div class="tt-row-buttons">
+        <button id="practice-aftermath" class="tt-btn" disabled>Run Aftermath</button>
+        <button id="practice-save" class="tt-btn-primary" disabled>Save round to storage</button>
+      </div>
+    </div>
+    <div id="practice-aftermath-box" class="tt-subcard tt-hidden">
+      <h3>Aftermath</h3>
+      <pre id="practice-aftermath-body" class="tt-preview"></pre>
+    </div>
+  </section>
+
+  <!-- LIVE MODE -->
+  <section class="tt-card" id="live">
+    <header class="tt-card-header">
+      <h2>Live Mode</h2>
+      <span class="tt-card-tag" data-color="red">Step 3 + 4</span>
+    </header>
+    <div class="tt-grid-2">
+      <div>
+        <label class="tt-label">Audio file</label>
+        <input id="live-audio" type="file" accept="audio/*" />
+        <label class="tt-label">Speaker (emotion only)</label>
+        <select id="live-speaker" class="tt-select">
+          <option value="user">user</option>
+          <option value="other">other</option>
+        </select>
+        <div class="tt-row-buttons">
+          <button id="live-transcribe" class="tt-btn-primary">Transcribe</button>
+          <button id="live-emotion" class="tt-btn">Analyse emotion</button>
+        </div>
+      </div>
+      <div>
+        <label class="tt-label">Transcript</label>
+        <pre id="live-transcript" class="tt-preview"></pre>
+        <label class="tt-label">Emotion</label>
+        <pre id="live-emotion-body" class="tt-preview"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="tt-card" id="insights">
+    <header class="tt-card-header">
+      <h2>Insights</h2>
+      <span class="tt-card-tag" data-color="green">Step 11</span>
+    </header>
+    <div class="tt-grid-2">
+      <div>
+        <label class="tt-label">Stored rounds for this person</label>
+        <button id="insights-rounds-refresh" class="tt-btn-ghost">Refresh rounds</button>
+        <pre id="insights-rounds" class="tt-preview"></pre>
+      </div>
+      <div>
+        <label class="tt-label">Relationship Pulse</label>
+        <div class="tt-row-buttons">
+          <button id="insights-pulse-load" class="tt-btn-ghost">Load saved pulse</button>
+          <button id="insights-pulse-refresh" class="tt-btn-primary">Compute pulse from stored rounds</button>
+          <button id="insights-pulse-save" class="tt-btn" disabled>Save pulse</button>
+        </div>
+        <pre id="insights-pulse" class="tt-preview"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="errors" class="tt-errors"></section>
+
+</main>
+
+<footer class="tt-footer">
+  <span>Tough Talks · all processing local · zero cloud dependency</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
