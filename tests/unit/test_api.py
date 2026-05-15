@@ -792,10 +792,10 @@ def test_text_route_503_when_no_registry(no_registry_client: TestClient):
     assert "no registry" in response.json()["detail"]["error"].lower()
 
 
-def test_text_route_503_when_text_model_missing():
+def test_text_route_503_when_no_models_loaded():
     """Empty registry (no text, no multimodal) — every inference route
-    503s. Same shape as a deployment that ran the lifespan with
-    include_text=False."""
+    503s. Same shape as a deployment that ran the lifespan with both
+    include_text=False AND include_multimodal=False."""
     empty_registry = ModelRegistry()
     app.dependency_overrides[get_registry] = lambda: empty_registry
     try:
@@ -805,6 +805,44 @@ def test_text_route_503_when_text_model_missing():
             json={"turns": [{"speaker": "user", "text": "hi"}]},
         )
         assert response.status_code == 503
-        assert "text-only" in response.json()["detail"]["error"].lower()
+        assert "no model loaded" in response.json()["detail"]["error"].lower()
+    finally:
+        app.dependency_overrides.pop(get_registry, None)
+
+
+def test_text_route_falls_back_to_multimodal_when_text_missing(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Multimodal-only registry — text routes fall back to the multimodal
+    pair. Same shape as the T4 / on-device deployment that loads only
+    the multimodal variant to stay inside VRAM."""
+    mm_processor = object()
+    mm_model = object()
+    multimodal_only = ModelRegistry(
+        multimodal_processor=mm_processor,
+        multimodal_model=mm_model,
+    )
+    app.dependency_overrides[get_registry] = lambda: multimodal_only
+
+    captured: dict[str, Any] = {}
+
+    def _stub(processor, model, turns, *, cfg):
+        captured["processor"] = processor
+        captured["model"] = model
+        return _TALK_DNA_OK
+
+    monkeypatch.setattr(
+        "backend.api.routes.talk_dna.analyze_talk_dna", _stub
+    )
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/talk-dna/analyze",
+            json={"turns": [{"speaker": "user", "text": "hi"}]},
+        )
+        assert response.status_code == 200, response.text
+        # The fallback must hand the multimodal pair to the runtime.
+        assert captured["processor"] is mm_processor
+        assert captured["model"] is mm_model
     finally:
         app.dependency_overrides.pop(get_registry, None)

@@ -67,13 +67,32 @@ class ModelRegistry:
     multimodal_model: Optional[Any] = None
 
     def text(self) -> tuple[Any, Any]:
-        """Return ``(processor, model)`` for text-only routes."""
-        if self.text_processor is None or self.text_model is None:
-            raise RegistryNotReady(
-                "text-only model is not loaded — initialise the registry "
-                "with include_text=True or inject a text-enabled registry"
-            )
-        return self.text_processor, self.text_model
+        """Return ``(processor, model)`` for text-only routes.
+
+        Falls back to the multimodal pair when no dedicated text-only
+        pair is loaded. Gemma 4's multimodal class wraps the same LM as
+        the text-only class — text generation works on either, the
+        multimodal variant just carries extra audio/image projection
+        heads that go unused on a text-only chat.
+
+        The fallback is what makes the API runnable on constrained
+        hardware (T4 / on-device) where only one model variant fits in
+        VRAM. High-VRAM deployments can still load both variants; the
+        dedicated text-only pair is preferred when present because the
+        runtime cost per inference is slightly lower.
+        """
+        if self.text_processor is not None and self.text_model is not None:
+            return self.text_processor, self.text_model
+        if (
+            self.multimodal_processor is not None
+            and self.multimodal_model is not None
+        ):
+            return self.multimodal_processor, self.multimodal_model
+        raise RegistryNotReady(
+            "no model loaded — initialise the registry with at least one "
+            "of include_text or include_multimodal, or inject a registry "
+            "with a loaded model pair"
+        )
 
     def multimodal(self) -> tuple[Any, Any]:
         """Return ``(processor, model)`` for audio routes."""
