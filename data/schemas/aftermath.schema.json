@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Aftermath",
+  "description": "Plan-vs-reality comparison between a pre-mortem prediction and the actual practice conversation.",
+  "type": "object",
+  "required": [
+    "goal_outcome",
+    "scenario_outcomes",
+    "unforeseen_moments",
+    "prediction_accuracy",
+    "next_round_focus"
+  ],
+  "properties": {
+    "goal_outcome": {
+      "type": "object",
+      "required": ["status", "summary"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["achieved", "partial", "not_achieved"]
+        },
+        "summary": {
+          "type": "string",
+          "description": "One- or two-sentence read on whether the user got what they came for."
+        }
+      }
+    },
+    "scenario_outcomes": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "One entry per predicted pre-mortem scenario, in the same order (scenario_id 1, 2, 3).",
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "title",
+          "predicted_resistance_type",
+          "match_quality",
+          "materialized",
+          "evidence",
+          "notes"
+        ],
+        "properties": {
+          "scenario_id": {"type": "integer", "minimum": 1, "maximum": 3},
+          "title": {
+            "type": "string",
+            "description": "Copied verbatim from the predicted scenario."
+          },
+          "predicted_resistance_type": {
+            "type": "string",
+            "enum": ["deflect", "guilt_trip", "deny", "counter_attack", "silent", "concede"]
+          },
+          "match_quality": {
+            "type": "string",
+            "enum": ["direct_hit", "partial", "did_not_occur"]
+          },
+          "materialized": {
+            "type": "boolean",
+            "description": "True iff match_quality is 'direct_hit' or 'partial'."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Short transcript-grounded evidence the scenario materialized. Empty string when match_quality is 'did_not_occur'."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Plain-English read on what the prediction got right and what it missed for this scenario."
+          }
+        }
+      }
+    },
+    "unforeseen_moments": {
+      "type": "array",
+      "description": "Things that actually happened in the round but the pre-mortem did NOT predict. Empty array is valid.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "description"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["risk", "opportunity"]
+          },
+          "turn": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Optional. 1-based index into the USER turns where this surfaced."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "prediction_accuracy": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "How well the pre-mortem matched reality overall. 1.0 = every scenario landed as predicted; 0.0 = none of them did."
+    },
+    "next_round_focus": {
+      "type": "string",
+      "description": "Single-sentence guidance for what the next practice round should target, based on this comparison."
+    }
+  }
+}
