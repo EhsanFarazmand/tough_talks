@@ -49,6 +49,21 @@ async function handleResponse(res) {
     err.detail = detail;
     throw err;
   }
+  // Streaming routes (premortem / debrief / aftermath / pulse) commit a
+  // 200 before the model runs so cloudflare's ~100 s TTFB edge timeout
+  // never fires. Runtime errors that happen mid-stream can't be
+  // signalled as a real 422 — they arrive as a `__tt_error__` envelope
+  // in the body. Surface them as the same shape the route would have
+  // raised synchronously (status + detail), so showError renders
+  // identically regardless of code path.
+  if (body && typeof body === "object" && body.__tt_error__) {
+    const wrapped = body.__tt_error__;
+    const detail = wrapped.detail || {};
+    const err = new Error(detail.error || `HTTP ${wrapped.status || 422}`);
+    err.status = wrapped.status || 422;
+    err.detail = detail;
+    throw err;
+  }
   return body;
 }
 

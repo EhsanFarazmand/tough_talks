@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from backend.api.deps import (
     ModelRegistry,
     RegistryNotReady,
     get_registry,
 )
-from backend.api.routes._common import (
-    registry_error_to_http,
-    runtime_error_to_http,
-)
+from backend.api.routes._common import registry_error_to_http
+from backend.api.routes._stream import streaming_runtime_call
 from backend.api.schemas import DebriefRequest
 from backend.core._runtime import (
     DebriefConfig,
@@ -33,7 +32,7 @@ router = APIRouter()
 def generate(
     request: DebriefRequest,
     registry: ModelRegistry = Depends(get_registry),
-) -> dict:
+) -> StreamingResponse:
     """Score a finished practice round and return coaching feedback.
 
     Inputs: the practice transcript plus optional PersonVault and
@@ -44,6 +43,10 @@ def generate(
     ``enable_thinking=true`` improves cross-field consistency on the
     bucket classifications (a USER move in the counterparty's
     ``de_escalation_keys`` belongs in ``wins``, not ``ground_lost``).
+
+    Response is streamed via :func:`streaming_runtime_call` so the
+    cloudflared edge ~100 s TTFB timeout never fires on T4 — see
+    :mod:`backend.api.routes._stream` for the envelope contract.
     """
     try:
         processor, model = registry.text()
@@ -59,7 +62,8 @@ def generate(
         prompt_name=request.prompt_name,
         enable_thinking=request.enable_thinking,
     )
-    try:
-        return generate_debrief(processor, model, cfg=cfg)
-    except DebriefError as exc:
-        raise runtime_error_to_http(exc, component="debrief") from exc
+    return streaming_runtime_call(
+        run=lambda: generate_debrief(processor, model, cfg=cfg),
+        component="debrief",
+        runtime_error_cls=DebriefError,
+    )

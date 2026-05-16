@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from backend.api.deps import (
     ModelRegistry,
     RegistryNotReady,
     get_registry,
 )
-from backend.api.routes._common import (
-    registry_error_to_http,
-    runtime_error_to_http,
-)
+from backend.api.routes._common import registry_error_to_http
+from backend.api.routes._stream import streaming_runtime_call
 from backend.api.schemas import PulseRequest
 from backend.core._runtime import (
     PulseConfig,
@@ -33,7 +32,7 @@ router = APIRouter()
 def generate(
     request: PulseRequest,
     registry: ModelRegistry = Depends(get_registry),
-) -> dict:
+) -> StreamingResponse:
     """Aggregate multiple rounds for one (user, counterparty) pair.
 
     Required: at least two rounds and a PersonVault profile. Pass
@@ -45,6 +44,10 @@ def generate(
     Per the promoted rule in ``knowledge/phases/rules.md``, this route
     defaults to ``enable_thinking=true`` with a 4096-token budget —
     pulse is the most cross-field-consistency-heavy Phase 4 payload.
+
+    Response is streamed via :func:`streaming_runtime_call` so the
+    cloudflared edge ~100 s TTFB timeout never fires on T4 — see
+    :mod:`backend.api.routes._stream` for the envelope contract.
     """
     try:
         processor, model = registry.text()
@@ -60,7 +63,8 @@ def generate(
         prompt_name=request.prompt_name,
         enable_thinking=request.enable_thinking,
     )
-    try:
-        return generate_pulse(processor, model, cfg=cfg)
-    except PulseError as exc:
-        raise runtime_error_to_http(exc, component="pulse") from exc
+    return streaming_runtime_call(
+        run=lambda: generate_pulse(processor, model, cfg=cfg),
+        component="pulse",
+        runtime_error_cls=PulseError,
+    )

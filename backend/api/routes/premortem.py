@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from backend.api.deps import (
     ModelRegistry,
     RegistryNotReady,
     get_registry,
 )
-from backend.api.routes._common import (
-    registry_error_to_http,
-    runtime_error_to_http,
-)
+from backend.api.routes._common import registry_error_to_http
+from backend.api.routes._stream import streaming_runtime_call
 from backend.api.schemas import PremortemRequest
 from backend.core._runtime import (
     PremortemConfig,
@@ -33,7 +32,7 @@ router = APIRouter()
 def generate(
     request: PremortemRequest,
     registry: ModelRegistry = Depends(get_registry),
-) -> dict:
+) -> StreamingResponse:
     """Produce three parameterised failure scenarios.
 
     Each scenario's ``simulation_parameters`` is shaped to feed into a
@@ -44,6 +43,10 @@ def generate(
     Per ``knowledge/phases/rules.md § Decoding knobs by task type``, set
     ``enable_thinking=true`` for cross-field consistency on analytical
     payloads (the rule is N=4 strong as of Step 11).
+
+    Response is streamed via :func:`streaming_runtime_call` so the
+    cloudflared edge ~100 s TTFB timeout never fires on T4 — see
+    :mod:`backend.api.routes._stream` for the envelope contract.
     """
     try:
         processor, model = registry.text()
@@ -59,7 +62,8 @@ def generate(
         prompt_name=request.prompt_name,
         enable_thinking=request.enable_thinking,
     )
-    try:
-        return generate_premortem(processor, model, cfg=cfg)
-    except PremortemError as exc:
-        raise runtime_error_to_http(exc, component="premortem") from exc
+    return streaming_runtime_call(
+        run=lambda: generate_premortem(processor, model, cfg=cfg),
+        component="premortem",
+        runtime_error_cls=PremortemError,
+    )

@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 from backend.api.deps import (
     ModelRegistry,
     RegistryNotReady,
     get_registry,
 )
-from backend.api.routes._common import (
-    registry_error_to_http,
-    runtime_error_to_http,
-)
+from backend.api.routes._common import registry_error_to_http
+from backend.api.routes._stream import streaming_runtime_call
 from backend.api.schemas import AftermathRequest
 from backend.core._runtime import (
     AftermathConfig,
@@ -33,7 +32,7 @@ router = APIRouter()
 def generate(
     request: AftermathRequest,
     registry: ModelRegistry = Depends(get_registry),
-) -> dict:
+) -> StreamingResponse:
     """Produce a plan-vs-reality comparison for a finished practice round.
 
     Required inputs: the pre-mortem (Step 8 output) and the practice
@@ -45,6 +44,10 @@ def generate(
     cross-field consistency this payload requires (three scenarios
     cross-referenced against transcript, derived ``materialized`` from
     ``match_quality``, evidence-vs-quality consistency).
+
+    Response is streamed via :func:`streaming_runtime_call` so the
+    cloudflared edge ~100 s TTFB timeout never fires on T4 — see
+    :mod:`backend.api.routes._stream` for the envelope contract.
     """
     try:
         processor, model = registry.text()
@@ -61,7 +64,8 @@ def generate(
         prompt_name=request.prompt_name,
         enable_thinking=request.enable_thinking,
     )
-    try:
-        return generate_aftermath(processor, model, cfg=cfg)
-    except AftermathError as exc:
-        raise runtime_error_to_http(exc, component="aftermath") from exc
+    return streaming_runtime_call(
+        run=lambda: generate_aftermath(processor, model, cfg=cfg),
+        component="aftermath",
+        runtime_error_cls=AftermathError,
+    )

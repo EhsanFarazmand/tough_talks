@@ -433,6 +433,11 @@ def test_premortem_empty_description_rejected(client: TestClient):
 def test_premortem_runtime_error(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
+    # Streaming route (see backend/api/routes/_stream.py): the 200 is
+    # committed when the first whitespace heartbeat byte leaves, so a
+    # runtime error raised after that arrives in-band as a
+    # `__tt_error__` envelope rather than as an HTTP 422. The frontend's
+    # handleResponse maps it back to the same error shape.
     monkeypatch.setattr(
         "backend.api.routes.premortem.generate_premortem",
         lambda *a, **kw: (_ for _ in ()).throw(
@@ -443,8 +448,11 @@ def test_premortem_runtime_error(
         "/premortem",
         json={"conversation_description": "x"},
     )
-    assert response.status_code == 422
-    assert response.json()["detail"]["component"] == "premortem"
+    assert response.status_code == 200
+    envelope = response.json()["__tt_error__"]
+    assert envelope["status"] == 422
+    assert envelope["detail"]["component"] == "premortem"
+    assert "scenarios count" in envelope["detail"]["error"]
 
 
 # ---------------------------------------------------------------------------
@@ -495,6 +503,7 @@ def test_debrief_happy(client: TestClient, monkeypatch: pytest.MonkeyPatch):
 def test_debrief_runtime_error(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
+    # Streaming route — see test_premortem_runtime_error comment.
     monkeypatch.setattr(
         "backend.api.routes.debrief.generate_debrief",
         lambda *a, **kw: (_ for _ in ()).throw(
@@ -505,8 +514,11 @@ def test_debrief_runtime_error(
         "/debrief",
         json={"transcript": [{"speaker": "user", "text": "x"}]},
     )
-    assert response.status_code == 422
-    assert response.json()["detail"]["component"] == "debrief"
+    assert response.status_code == 200
+    envelope = response.json()["__tt_error__"]
+    assert envelope["status"] == 422
+    assert envelope["detail"]["component"] == "debrief"
+    assert "one_fix_next_time" in envelope["detail"]["error"]
 
 
 # ---------------------------------------------------------------------------
@@ -550,6 +562,7 @@ def test_aftermath_happy(client: TestClient, monkeypatch: pytest.MonkeyPatch):
 def test_aftermath_runtime_error(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
+    # Streaming route — see test_premortem_runtime_error comment.
     monkeypatch.setattr(
         "backend.api.routes.aftermath.generate_aftermath",
         lambda *a, **kw: (_ for _ in ()).throw(
@@ -563,8 +576,11 @@ def test_aftermath_runtime_error(
             "transcript": [{"speaker": "user", "text": "x"}],
         },
     )
-    assert response.status_code == 422
-    assert response.json()["detail"]["component"] == "aftermath"
+    assert response.status_code == 200
+    envelope = response.json()["__tt_error__"]
+    assert envelope["status"] == 422
+    assert envelope["detail"]["component"] == "aftermath"
+    assert "scenarios" in envelope["detail"]["error"]
 
 
 # ---------------------------------------------------------------------------
@@ -629,6 +645,7 @@ def test_pulse_min_rounds_rejected_by_pydantic(client: TestClient):
 def test_pulse_runtime_error(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
+    # Streaming route — see test_premortem_runtime_error comment.
     monkeypatch.setattr(
         "backend.api.routes.pulse.generate_pulse",
         lambda *a, **kw: (_ for _ in ()).throw(PulseError("bad trend")),
@@ -643,8 +660,11 @@ def test_pulse_runtime_error(
             "person_profile": {"person_id": "person_abc", "name": "Jamie"},
         },
     )
-    assert response.status_code == 422
-    assert response.json()["detail"]["component"] == "pulse"
+    assert response.status_code == 200
+    envelope = response.json()["__tt_error__"]
+    assert envelope["status"] == 422
+    assert envelope["detail"]["component"] == "pulse"
+    assert "bad trend" in envelope["detail"]["error"]
 
 
 # ---------------------------------------------------------------------------
