@@ -18,6 +18,41 @@ from typing import Any, Optional
 
 LOG = logging.getLogger(__name__)
 
+# Module-level slot for the speculative-decoding draft model. Set once
+# at app startup by ``backend.api.main``'s lifespan event (via
+# ``set_default_assistant_model``) when the registry was built with
+# ``include_assistant=True``. Every chat() call picks it up unless the
+# caller passes an explicit ``assistant_model=`` kwarg.
+#
+# Kept as a module-level singleton because the draft is genuinely
+# global — one draft model, shared by every text route — and threading
+# it through every runtime function's signature + every Config
+# dataclass would mean ~16 file edits for no benefit beyond visibility.
+# The env-var switch (``TOUGH_TALKS_USE_ASSISTANT``) controls whether
+# the lifespan ever populates this slot; when unset, every chat() call
+# behaves exactly as it did before this change.
+_DEFAULT_ASSISTANT_MODEL: Optional[Any] = None
+
+
+def set_default_assistant_model(model: Optional[Any]) -> None:
+    """Install (or clear) the process-wide speculative-decoding draft.
+
+    Call once at app boot. Passing ``None`` clears the slot — every
+    subsequent chat() call falls back to plain generation, which is
+    exactly what happens when ``TOUGH_TALKS_USE_ASSISTANT=0`` (or when
+    the registry was built without ``include_assistant=True``).
+    """
+    global _DEFAULT_ASSISTANT_MODEL
+    _DEFAULT_ASSISTANT_MODEL = model
+
+
+def get_default_assistant_model() -> Optional[Any]:
+    """Return the currently installed draft model, or ``None``.
+
+    Mostly for diagnostics (``/health`` surfaces this) and tests.
+    """
+    return _DEFAULT_ASSISTANT_MODEL
+
 
 @dataclass
 class GenerationConfig:
@@ -45,6 +80,7 @@ def chat(
     tools: Optional[list[dict]] = None,
     cfg: Optional[GenerationConfig] = None,
     enable_thinking: bool = False,
+    assistant_model: Optional[Any] = None,
 ) -> str:
     """Generate a single assistant response and return the **raw decoded
     output** (all special tokens preserved).
@@ -60,6 +96,11 @@ def chat(
     ``tools`` (when provided) is the OpenAI function-tool list; it is
     forwarded to ``apply_chat_template(tools=...)`` so the chat template
     emits Gemma 4's native tool declarations.
+
+    ``assistant_model`` is the speculative-decoding draft. When ``None``
+    (the default), falls back to the module-level default installed by
+    :func:`set_default_assistant_model` at app startup. When that's also
+    None, plain generation runs — identical behaviour to pre-Step-15.
     """
     import torch
 
@@ -89,6 +130,16 @@ def chat(
         gen_kwargs["top_k"] = cfg.top_k
     if cfg.repetition_penalty != 1.0:
         gen_kwargs["repetition_penalty"] = cfg.repetition_penalty
+
+    # Resolve the draft model: explicit arg wins, then module-level
+    # default, then None (plain generation).
+    resolved_assistant = (
+        assistant_model
+        if assistant_model is not None
+        else _DEFAULT_ASSISTANT_MODEL
+    )
+    if resolved_assistant is not None:
+        gen_kwargs["assistant_model"] = resolved_assistant
 
     with torch.no_grad():
         output_ids = model.generate(**inputs, **gen_kwargs)

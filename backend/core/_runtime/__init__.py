@@ -49,8 +49,13 @@ from .emotion import (
     build_emotion_messages,
     format_emotion_context,
 )
-from .generation import GenerationConfig, chat
-from .model import DEFAULT_MODEL_ID, LoadConfig, load_model
+from .generation import (
+    GenerationConfig,
+    chat,
+    get_default_assistant_model,
+    set_default_assistant_model,
+)
+from .model import DEFAULT_ASSISTANT_MODEL_ID, DEFAULT_MODEL_ID, LoadConfig, load_model
 from .parsing import JsonParseError, parse_json, try_parse_json
 from .person_vault import (
     ALLOWED_COMMUNICATION_STYLES,

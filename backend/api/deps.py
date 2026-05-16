@@ -26,6 +26,7 @@ from fastapi import Request
 from pathlib import Path
 
 from backend.core._runtime import (
+    DEFAULT_ASSISTANT_MODEL_ID,
     DEFAULT_MODEL_ID,
     LoadConfig,
     load_model,
@@ -73,6 +74,13 @@ class ModelRegistry:
     text_model: Optional[Any] = None
     multimodal_processor: Optional[Any] = None
     multimodal_model: Optional[Any] = None
+    # Speculative-decoding draft (google/gemma-4-E2B-it-assistant by
+    # default). Optional — when None, plain generation runs. When set,
+    # the lifespan also installs it as the module-level default via
+    # ``set_default_assistant_model`` so every chat() call picks it up
+    # automatically. See ``include_assistant`` on load_registry().
+    assistant_processor: Optional[Any] = None
+    assistant_model: Optional[Any] = None
 
     def text(self) -> tuple[Any, Any]:
         """Return ``(processor, model)`` for text-only routes.
@@ -112,12 +120,25 @@ class ModelRegistry:
             )
         return self.multimodal_processor, self.multimodal_model
 
+    def assistant(self) -> Optional[Any]:
+        """Return the speculative-decoding draft, or ``None``.
+
+        Distinct from :meth:`text` / :meth:`multimodal`: never raises
+        when the draft isn't loaded — plain generation is a fine
+        fallback. The caller (the lifespan event) typically installs
+        the returned model via ``set_default_assistant_model`` so the
+        chat() chokepoint picks it up automatically.
+        """
+        return self.assistant_model
+
 
 def load_registry(
     *,
     model_id: str = DEFAULT_MODEL_ID,
     include_text: bool = True,
     include_multimodal: bool = True,
+    include_assistant: bool = False,
+    assistant_model_id: str = DEFAULT_ASSISTANT_MODEL_ID,
 ) -> ModelRegistry:
     """Eagerly load both Gemma 4 variants and return a :class:`ModelRegistry`.
 
@@ -130,6 +151,14 @@ def load_registry(
     text-only deployment can skip the multimodal cost. The audio routes
     will raise :class:`RegistryNotReady` when invoked on a text-only
     registry; the text routes will raise on a multimodal-only registry.
+
+    ``include_assistant`` loads the 78M-param speculative-decoding draft
+    (``google/gemma-4-E2B-it-assistant`` by default). The draft pairs
+    with the text/multimodal target via
+    ``model.generate(assistant_model=...)``; per the model card the
+    output quality is identical and decode latency drops ~3x. Cheap
+    to load (~150 MB at BF16) and fits comfortably on a T4 alongside
+    the multimodal target.
     """
     text_processor: Optional[Any] = None
     text_model: Optional[Any] = None
@@ -147,11 +176,21 @@ def load_registry(
             LoadConfig(model_id=model_id, multimodal=True)
         )
 
+    assistant_processor: Optional[Any] = None
+    assistant_model: Optional[Any] = None
+    if include_assistant:
+        LOG.info("Loading speculative-decoding draft: %s", assistant_model_id)
+        assistant_processor, assistant_model = load_model(
+            LoadConfig(model_id=assistant_model_id, multimodal=False)
+        )
+
     return ModelRegistry(
         text_processor=text_processor,
         text_model=text_model,
         multimodal_processor=mm_processor,
         multimodal_model=mm_model,
+        assistant_processor=assistant_processor,
+        assistant_model=assistant_model,
     )
 
 

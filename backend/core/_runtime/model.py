@@ -29,6 +29,16 @@ LOG = logging.getLogger(__name__)
 
 DEFAULT_MODEL_ID = "google/gemma-4-E2B-it"
 
+# Speculative-decoding draft model — a 78M-param companion that pairs
+# with DEFAULT_MODEL_ID via ``model.generate(assistant_model=...)``.
+# Per the model card, the draft is verified by the target so output
+# quality is identical to plain generation; only latency drops (~3x on
+# T4 in practice). Loaded by ``load_registry(include_assistant=True)``
+# and injected into the chat() chokepoint via
+# ``set_default_assistant_model`` — see backend.api.deps and
+# backend.core._runtime.generation for the wiring.
+DEFAULT_ASSISTANT_MODEL_ID = "google/gemma-4-E2B-it-assistant"
+
 
 @dataclass(frozen=True)
 class LoadConfig:

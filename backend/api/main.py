@@ -50,7 +50,10 @@ from backend.api.routes import (
     talk_dna,
     transcription,
 )
-from backend.core._runtime import resolve_storage_root
+from backend.core._runtime import (
+    resolve_storage_root,
+    set_default_assistant_model,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -60,6 +63,7 @@ LOG = logging.getLogger(__name__)
 # step. Notebooks and tests skip the lifespan entirely.
 _ENV_INCLUDE_TEXT = "TOUGH_TALKS_INCLUDE_TEXT"
 _ENV_INCLUDE_MULTIMODAL = "TOUGH_TALKS_INCLUDE_MULTIMODAL"
+_ENV_USE_ASSISTANT = "TOUGH_TALKS_USE_ASSISTANT"
 _ENV_SKIP_MODEL_LOAD = "TOUGH_TALKS_SKIP_MODEL_LOAD"
 ENV_FRONTEND_DIR = "TOUGH_TALKS_FRONTEND_DIR"
 
@@ -143,15 +147,28 @@ async def lifespan(app: FastAPI):
 
     include_text = _env_bool(_ENV_INCLUDE_TEXT, default=True)
     include_multimodal = _env_bool(_ENV_INCLUDE_MULTIMODAL, default=True)
+    # Default ON: speculative decoding is lossless (the draft's tokens
+    # are verified by the target — see google/gemma-4-E2B-it-assistant
+    # model card) and gives ~3x decode speed on T4. Set
+    # TOUGH_TALKS_USE_ASSISTANT=0 to switch back to plain generation
+    # without any code change.
+    include_assistant = _env_bool(_ENV_USE_ASSISTANT, default=True)
     LOG.info(
-        "Building ModelRegistry (text=%s, multimodal=%s)",
+        "Building ModelRegistry (text=%s, multimodal=%s, assistant=%s)",
         include_text,
         include_multimodal,
+        include_assistant,
     )
     app.state.registry = load_registry(
         include_text=include_text,
         include_multimodal=include_multimodal,
+        include_assistant=include_assistant,
     )
+    # Install the draft as the chat() module-level default so every text
+    # route picks it up automatically — no per-runtime kwarg plumbing
+    # required. When include_assistant=False, this passes None and
+    # plain generation runs.
+    set_default_assistant_model(app.state.registry.assistant())
     LOG.info("ModelRegistry ready")
     try:
         yield
@@ -159,6 +176,7 @@ async def lifespan(app: FastAPI):
         # transformers does not expose an explicit cleanup hook; clearing
         # the reference is enough for the GC to release the weights on
         # process exit. Kept explicit so the shutdown shape is clear.
+        set_default_assistant_model(None)
         app.state.registry = None
 
 
@@ -194,6 +212,7 @@ async def health() -> dict:
     registry = getattr(app.state, "registry", None)
     text_loaded = bool(registry and registry.text_model is not None)
     multimodal_loaded = bool(registry and registry.multimodal_model is not None)
+    assistant_loaded = bool(registry and registry.assistant_model is not None)
     storage_root = getattr(app.state, "storage_root", None)
     frontend_dir = getattr(app.state, "frontend_dir", None)
     frontend_present = bool(frontend_dir and Path(frontend_dir).is_dir())
@@ -202,6 +221,7 @@ async def health() -> dict:
         "version": "0.1.0",
         "text_model_loaded": text_loaded,
         "multimodal_model_loaded": multimodal_loaded,
+        "assistant_model_loaded": assistant_loaded,
         "storage_root": str(storage_root) if storage_root is not None else None,
         "frontend_dir": str(frontend_dir) if frontend_dir is not None else None,
         "frontend_present": frontend_present,
