@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<!-- saved from url=(0077)https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html -->
+<html lang="en" data-qb-installed="true"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tough Talks — Product Concept</title>
+<link href="./Tough Talks — Product Concept_files/css2" rel="stylesheet">
+<style>
+:root {
+  --bg: #0D0D0F;
+  --bg2: #141417;
+  --bg3: #1C1C21;
+  --border: rgba(255,255,255,0.07);
+  --border-bright: rgba(255,255,255,0.14);
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.15);
+  --gold-glow: rgba(201,168,76,0.08);
+  --red: #E05A5A;
+  --red-dim: rgba(224,90,90,0.12);
+  --blue: #5A8AE0;
+  --blue-dim: rgba(90,138,224,0.12);
+  --green: #5ABA7A;
+  --green-dim: rgba(90,186,122,0.12);
+  --purple: #9B7AE0;
+  --purple-dim: rgba(155,122,224,0.12);
+  --text: #E8E6E0;
+  --text-dim: #8A8680;
+  --text-dimmer: #4A4845;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(13,13,15,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold); letter-spacing: 0.02em; }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { font-size: 12px; color: var(--text-dim); text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center;
+  padding: 120px 40px 80px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 60%, rgba(201,168,76,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 24px;
+  border: 1px solid rgba(201,168,76,0.3);
+  padding: 6px 16px; border-radius: 20px;
+  display: inline-block;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 700; line-height: 1.0;
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+.hero h1 em { font-style: italic; color: var(--gold); }
+.hero-sub {
+  font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 32px; font-family: 'DM Mono', monospace;
+}
+.hero-desc {
+  max-width: 580px;
+  font-size: 17px; color: var(--text-dim); line-height: 1.7;
+  margin-bottom: 48px;
+}
+.hero-desc strong { color: var(--text); font-weight: 400; }
+.modes-preview {
+  display: flex; gap: 12px;
+}
+.mode-chip {
+  padding: 10px 22px; border-radius: 30px;
+  font-size: 13px; font-weight: 500; letter-spacing: 0.03em;
+  cursor: default;
+}
+.mode-chip.practice { background: var(--blue-dim); border: 1px solid rgba(90,138,224,0.3); color: var(--blue); }
+.mode-chip.live { background: var(--red-dim); border: 1px solid rgba(224,90,90,0.3); color: var(--red); }
+.scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-dimmer); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* SECTIONS */
+.section { padding: 100px 40px; max-width: 1100px; margin: 0 auto; }
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 4vw, 48px); font-weight: 700;
+  line-height: 1.15; margin-bottom: 20px;
+}
+.section-title em { font-style: italic; color: var(--gold); }
+.section-body { font-size: 16px; color: var(--text-dim); max-width: 600px; line-height: 1.75; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+/* PROBLEM */
+.problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-top: 48px; }
+.problem-item { background: var(--bg2); padding: 28px 24px; }
+.problem-icon { font-size: 24px; margin-bottom: 12px; }
+.problem-item h4 { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.problem-item p { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+
+/* TWO MODES */
+.modes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 48px; }
+.mode-card {
+  border-radius: 20px; padding: 36px;
+  border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.mode-card::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0.4; pointer-events: none;
+}
+.mode-card.practice::before { background: radial-gradient(ellipse at top left, rgba(90,138,224,0.15), transparent 60%); }
+.mode-card.live::before { background: radial-gradient(ellipse at top left, rgba(224,90,90,0.15), transparent 60%); }
+.mode-badge {
+  display: inline-block; font-size: 11px; font-weight: 500;
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 20px;
+  font-family: 'DM Mono', monospace; letter-spacing: 0.05em;
+}
+.mode-card.practice .mode-badge { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(90,138,224,0.25); }
+.mode-card.live .mode-badge { background: var(--red-dim); color: var(--red); border: 1px solid rgba(224,90,90,0.25); }
+.mode-card h3 { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+.mode-card p { font-size: 14px; color: var(--text-dim); line-height: 1.7; margin-bottom: 24px; }
+.mode-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.mode-features li {
+  font-size: 13px; color: var(--text-dim); padding: 10px 14px;
+  background: rgba(255,255,255,0.03); border-radius: 10px;
+  border: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.mode-features li .feat-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+.mode-features li .feat-text strong { color: var(--text); font-weight: 500; display: block; font-size: 12px; margin-bottom: 2px; }
+
+/* INNOVATIONS */
+.innovations-list { margin-top: 56px; display: flex; flex-direction: column; gap: 1px; }
+.innovation-item {
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s;
+}
+.innovation-item:hover { border-color: var(--border-bright); }
+.innovation-item.open { border-color: var(--border-bright); }
+.innov-header {
+  padding: 22px 28px; display: flex; align-items: center; gap: 20px;
+  background: var(--bg2); user-select: none;
+}
+.innov-number { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dimmer); min-width: 28px; }
+.innov-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.innov-title { font-size: 15px; font-weight: 500; flex: 1; }
+.innov-tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; }
+.innov-arrow { color: var(--text-dimmer); font-size: 12px; transition: transform 0.2s; }
+.innovation-item.open .innov-arrow { transform: rotate(180deg); }
+.innov-body {
+  display: none; padding: 0 28px 28px; background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+.innovation-item.open .innov-body { display: block; padding-top: 24px; }
+.innov-wow {
+  background: var(--gold-glow); border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+}
+.innov-wow-label { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.innov-wow-text { font-size: 13px; color: #C9A84C; line-height: 1.6; font-style: italic; }
+.innov-desc { font-size: 13px; color: var(--text-dim); line-height: 1.75; }
+
+/* FLOW */
+.flow { margin-top: 56px; position: relative; }
+.flow-track { display: flex; flex-direction: column; gap: 0; }
+.flow-step { display: flex; gap: 24px; padding: 24px 0; position: relative; }
+.flow-step:not(:last-child)::after {
+  content: ''; position: absolute; left: 15px; top: 52px; bottom: -24px;
+  width: 1px; background: linear-gradient(to bottom, var(--gold), transparent);
+}
+.flow-dot {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-family: 'DM Mono', monospace;
+  border: 1px solid var(--gold); color: var(--gold);
+  background: var(--bg); position: relative; z-index: 1;
+}
+.flow-content h4 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.flow-content p { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+
+/* EDGE */
+.edge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 48px; }
+.edge-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.edge-card h4 { font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--green); }
+.edge-card p { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+
+/* TECH */
+.tech-stack { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; }
+.tech-pill {
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 12px; font-family: 'DM Mono', monospace;
+  border: 1px solid var(--border); color: var(--text-dim);
+  background: var(--bg2);
+}
+
+/* QUOTE */
+.quote-block {
+  border-left: 3px solid var(--gold);
+  padding: 24px 32px; margin: 64px 0;
+  background: var(--gold-glow); border-radius: 0 14px 14px 0;
+}
+.quote-block blockquote { font-family: 'Playfair Display', serif; font-size: 22px; font-style: italic; color: var(--text); line-height: 1.5; }
+.quote-block cite { display: block; margin-top: 12px; font-size: 12px; color: var(--text-dim); font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+
+/* FOOTER */
+footer { border-top: 1px solid var(--border); padding: 40px; text-align: center; }
+footer p { font-size: 12px; color: var(--text-dimmer); font-family: 'DM Mono', monospace; }
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .modes-grid { grid-template-columns: 1fr; }
+  .problem-grid { grid-template-columns: 1fr; }
+  .edge-grid { grid-template-columns: 1fr; }
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  .section { padding: 60px 20px; }
+  .hero { padding: 100px 20px 60px; }
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.hero > * { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+.hero > *:nth-child(1) { animation-delay: 0.1s; }
+.hero > *:nth-child(2) { animation-delay: 0.2s; }
+.hero > *:nth-child(3) { animation-delay: 0.3s; }
+.hero > *:nth-child(4) { animation-delay: 0.4s; }
+.hero > *:nth-child(5) { animation-delay: 0.5s; }
+.hero > *:nth-child(6) { animation-delay: 0.6s; }
+</style>
+</head>
+<body data-new-gr-c-s-check-loaded="14.1292.0" data-gr-ext-installed="">
+
+<nav>
+  <span class="nav-logo">Tough Talks</span>
+  <div class="nav-links">
+    <a href="https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html#problem">Problem</a>
+    <a href="https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html#modes">Modes</a>
+    <a href="https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html#innovations">Innovations</a>
+    <a href="https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html#flow">Flow</a>
+    <a href="https://came-cam-least-hobbies.trycloudflare.com/app/tough_talks_concept.html#edge">Edge</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">Gemma 4 Hackathon · Product Concept</div>
+  <h1><em>Tough</em> Talks</h1>
+  <p class="hero-sub">Your private AI coach for every hard conversation</p>
+  <p class="hero-desc">The conversations that matter most — salary negotiations, relationship confrontations, difficult feedback — are the ones we are <strong>least prepared for</strong>. Tough Talks gives you a private, on-device AI that trains you before and guides you during.</p>
+  <div class="modes-preview">
+    <span class="mode-chip practice">◎ Practice Mode</span>
+    <span class="mode-chip live">● Live Mode</span>
+  </div>
+  <span class="scroll-hint">↓ scroll to explore</span>
+</section>
+
+<hr class="divider">
+
+<!-- PROBLEM -->
+<section class="section" id="problem">
+  <div class="section-label">The Problem</div>
+  <h2 class="section-title">We rehearse presentations.<br><em>Never conversations.</em></h2>
+  <p class="section-body">The most consequential moments of our lives — asking for a raise, ending a relationship, setting a boundary with a parent — arrive with zero preparation and zero support. We improvise through them, often badly, and carry the damage for years.</p>
+
+  <div class="problem-grid">
+    <div class="problem-item">
+      <div class="problem-icon">😶</div>
+      <h4>We freeze or over-apologize</h4>
+      <p>Under pressure, we default to our worst patterns — caving too early, over-explaining, or going silent when we need to speak.</p>
+    </div>
+    <div class="problem-item">
+      <div class="problem-icon">🌀</div>
+      <h4>We escalate accidentally</h4>
+      <p>A tone shift, a poorly timed word, a defensive reflex — and a conversation that started well becomes a conflict neither person wanted.</p>
+    </div>
+    <div class="problem-item">
+      <div class="problem-icon">📵</div>
+      <h4>No safe place to practice</h4>
+      <p>You can't rehearse with the person you're about to confront. Friends give biased advice. Therapists cost money. You go in blind.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- TWO MODES -->
+<section class="section" id="modes">
+  <div class="section-label">The Solution</div>
+  <h2 class="section-title">Two modes.<br><em>One conversation.</em></h2>
+  <p class="section-body">Tough Talks works in two distinct phases — before and during. Each mode uses Gemma 4's capabilities differently, building toward the same outcome: you walk into any tough conversation prepared, and you walk out having said what you meant.</p>
+
+  <div class="modes-grid">
+    <!-- PRACTICE -->
+    <div class="mode-card practice">
+      <div class="mode-badge">◎ PRACTICE MODE</div>
+      <h3>The Rehearsal Room</h3>
+      <p>Before the conversation happens, Tough Talks builds a simulation of the other person and lets you fight, fail, and learn in private — as many times as you need.</p>
+      <ul class="mode-features">
+        <li>
+          <span class="feat-icon">🧠</span>
+          <span class="feat-text">
+            <strong>Persona Construction</strong>
+            Describe the person, paste their messages, or record how they speak. Gemma builds a behavioral simulation of them — their objections, their tone, their triggers.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">🎭</span>
+          <span class="feat-text">
+            <strong>Adversarial Roleplay</strong>
+            The simulation argues back, deflects, guilt-trips, or goes silent — whatever this person realistically does. Not a cooperative AI. A resistant one.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">📋</span>
+          <span class="feat-text">
+            <strong>Post-Round Debrief</strong>
+            After each practice, Gemma marks exactly where you lost ground, over-apologized, or missed an opening — with the line you should have used instead.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">🔁</span>
+          <span class="feat-text">
+            <strong>Scenario Branching</strong>
+            Explore different openings. What if you start soft? What if you lead with data? Gemma forks the simulation so you can test multiple strategies before committing.
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- LIVE -->
+    <div class="mode-card live">
+      <div class="mode-badge">● LIVE MODE</div>
+      <h3>The Conversation Co-Pilot</h3>
+      <p>During the real conversation, Tough Talks listens silently via earpiece or glanceable screen — detecting what's happening emotionally and surfacing guidance in real time, invisibly.</p>
+      <ul class="mode-features">
+        <li>
+          <span class="feat-icon">👁</span>
+          <span class="feat-text">
+            <strong>Emotion Radar</strong>
+            Live audio analysis tracks both speakers' emotional states — tension, frustration, openness — and displays a real-time heat map on your screen.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">💬</span>
+          <span class="feat-text">
+            <strong>The Whisper</strong>
+            Subtle on-screen prompts appear at critical moments: "They just made a concession — acknowledge it before responding." You see it. They don't.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">⚠️</span>
+          <span class="feat-text">
+            <strong>Escalation Alert</strong>
+            Detects when the conversation is about to go off the rails — pace, word choice, silence patterns — and suggests a specific de-escalation move.
+          </span>
+        </li>
+        <li>
+          <span class="feat-icon">📝</span>
+          <span class="feat-text">
+            <strong>Live Transcript + Bookmarks</strong>
+            Auto-transcribes in real time. You can silently bookmark any moment mid-conversation to revisit in the debrief — without breaking your presence.
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- INNOVATIONS -->
+<section class="section" id="innovations">
+  <div class="section-label">Innovation Layers</div>
+  <h2 class="section-title">What makes this<br><em>genuinely different</em></h2>
+  <p class="section-body">Beyond the two modes, Tough Talks has seven innovation layers that build a compounding intelligence — the more you use it, the sharper it becomes for you specifically.</p>
+
+  <div class="innovations-list" id="innovations-list"><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">01</span>
+      <span class="innov-color" style="background:#5A8AE0"></span>
+      <span class="innov-title">Talk DNA — Your Personal Communication Profile</span>
+      <span class="innov-tag" style="background:rgba(90,138,224,0.12);color:#5A8AE0">Personalization</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">After 5 conversations: 'You use the phrase "I just feel like" before every vulnerable statement. It signals uncertainty before you've even made your point. Here are 3 stronger openings.'</p>
+      </div>
+      <p class="innov-desc">Over time, Gemma builds your personal Talk DNA — a map of your verbal patterns, habitual weaknesses, and communication strengths. Do you over-apologize? Hedge with filler phrases? Go silent when challenged? Get sarcastic under pressure? Talk DNA surfaces these patterns across all your conversations and tracks whether they're improving. It becomes the most honest feedback you've ever received about how you actually communicate.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">02</span>
+      <span class="innov-color" style="background:#C9A84C"></span>
+      <span class="innov-title">The Person Vault — Build Models of the People in Your Life</span>
+      <span class="innov-tag" style="background:rgba(201,168,76,0.12);color:#C9A84C">Intelligence</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">'Based on your mother's messages and your description of past conversations, she tends to deflect with guilt when she feels criticized. Lead with appreciation before the issue — she responds 70% better to that framing.'</p>
+      </div>
+      <p class="innov-desc">For each person you have recurring tough conversations with, Tough Talks builds a behavioral profile — their communication style, emotional triggers, what they respond well to, and what escalates them. You feed it their messages, voice recordings, or simply describe them. The profile deepens with each conversation you have through the app. Over months, Gemma understands your relationships better than any third party could.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">03</span>
+      <span class="innov-color" style="background:#E05A5A"></span>
+      <span class="innov-title">The Pre-Mortem — Prepare for the Worst Case</span>
+      <span class="innov-tag" style="background:rgba(224,90,90,0.12);color:#E05A5A">Strategy</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">'You said the worst outcome is they deny everything and turn it back on you. Here's a simulation of exactly that scenario — practice until it doesn't destabilize you.'</p>
+      </div>
+      <p class="innov-desc">Before any practice session, Tough Talks runs a structured pre-mortem: what's the worst realistic outcome of this conversation? What would break your resolve? What would you regret saying? Gemma then builds a simulation that targets those exact scenarios — not to scare you, but to inoculate you. Walking into a hard conversation having already survived the worst version of it changes everything.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">04</span>
+      <span class="innov-color" style="background:#5ABA7A"></span>
+      <span class="innov-title">Conversation Blueprints — Templates for Common Tough Talks</span>
+      <span class="innov-tag" style="background:rgba(90,186,122,0.12);color:#5ABA7A">Scenario Library</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">Select 'Ask for a raise' → Gemma pre-loads the most common objections ('budget is tight', 'let's revisit in 6 months', 'your peers are at the same level'), your market data prompt, and your Talk DNA weak spots — personalized and ready.</p>
+      </div>
+      <p class="innov-desc">A growing library of pre-built conversation blueprints covers the most universally feared tough talks: asking for a raise, ending a relationship, setting a boundary with a parent, confronting a friend's betrayal, giving critical feedback to a report, disclosing a mental health issue, asking for help. Each blueprint comes pre-loaded with the most common opponent responses, recommended opening lines, and known pitfalls — personalized with your Talk DNA.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">05</span>
+      <span class="innov-color" style="background:#9B7AE0"></span>
+      <span class="innov-title">The Aftermath — Compare Plan vs. Reality</span>
+      <span class="innov-tag" style="background:rgba(155,122,224,0.12);color:#9B7AE0">Post-Conversation</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">'You planned to raise the issue within the first 3 minutes. You waited 18 minutes. The conversation ended before you got to your main point. Here is the moment you had an opening you didn't take — at 7:42.'</p>
+      </div>
+      <p class="innov-desc">After a live conversation, Tough Talks compares what you planned to say with what actually happened — the gaps, the pivots, the moments of strength, and the moments you went off-script. It annotates the transcript with what worked and what didn't, and generates 3 things to do differently next time. Over months, your Aftermath library becomes a detailed record of your growth as a communicator.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">06</span>
+      <span class="innov-color" style="background:#C9A84C"></span>
+      <span class="innov-title">The Relationship Pulse — Track Connection Over Time</span>
+      <span class="innov-tag" style="background:rgba(201,168,76,0.12);color:#C9A84C">Relationship Health</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">'Your conversations with your partner have shifted in the last 6 weeks: the ratio of problem-discussion to positive exchange has inverted. Three of the last four conversations ended with an unresolved item. This may be worth addressing directly.'</p>
+      </div>
+      <p class="innov-desc">For relationships where you have multiple conversations over time, Tough Talks tracks the emotional arc — are conversations getting easier or harder? Are issues getting resolved or accumulating? Is there growth or a recurring loop? The Relationship Pulse is not couples therapy — it's a private, honest longitudinal mirror of how your most important relationships are actually doing.</p>
+    </div>
+  </div><div class="innovation-item">
+    <div class="innov-header">
+      <span class="innov-number">07</span>
+      <span class="innov-color" style="background:#5A8AE0"></span>
+      <span class="innov-title">Cultural Calibration — Communication Across Contexts</span>
+      <span class="innov-tag" style="background:rgba(90,138,224,0.12);color:#5A8AE0">Cultural Intelligence</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">Preparing to negotiate with a Japanese counterpart vs. a New York executive: Gemma adjusts the simulation's communication style, silence norms, indirect language patterns, and face-saving conventions — so you're not just prepared for the conversation, but for the culture.</p>
+      </div>
+      <p class="innov-desc">Communication norms vary dramatically across cultures, industries, and power dynamics. A direct challenge that works in one context is an insult in another. Silence that signals discomfort in one culture signals respect in another. Cultural Calibration lets you configure the simulation and live coaching to the specific cultural context of your conversation — making Tough Talks genuinely global.</p>
+    </div>
+  </div></div>
+</section>
+
+<hr class="divider">
+
+<!-- CONVERSATION FLOW -->
+<section class="section" id="flow">
+  <div class="section-label">User Journey</div>
+  <h2 class="section-title">From dread<br><em>to done.</em></h2>
+  <p class="section-body">A complete end-to-end flow — from the moment you realize you need to have a hard conversation to the moment you've learned from it.</p>
+
+  <div class="flow">
+    <div class="flow-track" id="flow-track"><div class="flow-step">
+    <div class="flow-dot">1</div>
+    <div class="flow-content">
+      <h4>Identify the conversation</h4>
+      <p>You name the person, the issue, and what you want to achieve. Tough Talks checks if you have a Person Vault profile for them — if yes, it loads it. If not, it asks 5 quick questions to build a baseline.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">2</div>
+    <div class="flow-content">
+      <h4>Choose a Blueprint or go freeform</h4>
+      <p>Pick from the Conversation Blueprint library (raise negotiation, relationship confrontation, etc.) or describe the situation in your own words. Gemma generates the simulation parameters.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">3</div>
+    <div class="flow-content">
+      <h4>Run the Pre-Mortem</h4>
+      <p>Gemma presents the 3 most likely ways this conversation goes badly. You choose whether to simulate the hardest one first. This is optional but recommended — it's where the real preparation happens.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">4</div>
+    <div class="flow-content">
+      <h4>Practice rounds</h4>
+      <p>As many rounds as you need. Each round ends with a debrief: where you gained ground, where you lost it, and one specific line to try differently. Your Talk DNA updates with new patterns.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">5</div>
+    <div class="flow-content">
+      <h4>Build your Conversation Plan</h4>
+      <p>Gemma generates a lightweight 1-page plan: your opening line, your 3 key points, the 2 most likely objections with your responses, and your walk-away condition if needed.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">6</div>
+    <div class="flow-content">
+      <h4>Go live</h4>
+      <p>Switch to Live Mode. Gemma listens in the background, tracking emotion radar, whispering prompts, and bookmarking key moments. You're present in the conversation — Tough Talks is the quiet coach in your ear.</p>
+    </div>
+  </div><div class="flow-step">
+    <div class="flow-dot">7</div>
+    <div class="flow-content">
+      <h4>The Aftermath debrief</h4>
+      <p>Immediately after, Tough Talks generates your Aftermath: what was planned vs. what happened, the annotated transcript, 3 wins, 1 thing to fix, and an update to your Person Vault and Relationship Pulse.</p>
+    </div>
+  </div></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- EDGE ADVANTAGE -->
+<section class="section" id="edge">
+  <div class="section-label">Why Edge-First</div>
+  <h2 class="section-title">The conversations you'd<br><em>never cloud-upload.</em></h2>
+  <p class="section-body">Tough Talks runs entirely on-device via Gemma 4. This isn't just a technical choice — it's the only ethical architecture for an app handling the most private moments of people's lives.</p>
+
+  <div class="edge-grid">
+    <div class="edge-card">
+      <h4>Zero data exposure</h4>
+      <p>Your divorce conversation, your mental health disclosure, your salary demand — none of it touches a server. Not anonymized. Not encrypted on a cloud. Simply never sent.</p>
+    </div>
+    <div class="edge-card">
+      <h4>Works anywhere conversations happen</h4>
+      <p>A parking lot before a confrontation. A hospital room. A flight. A remote village. Tough conversations don't wait for good WiFi. Gemma on-device doesn't either.</p>
+    </div>
+    <div class="edge-card">
+      <h4>Persistent personal memory</h4>
+      <p>Your Talk DNA, person profiles, and outcome history accumulate locally over months. No account, no sync, no breach risk. Your data lives where you live.</p>
+    </div>
+    <div class="edge-card">
+      <h4>E2B / E4B for always-on listening</h4>
+      <p>Gemma's smallest models handle live audio monitoring at minimal battery cost. The larger model activates only for debrief generation — intelligent resource management built in.</p>
+    </div>
+  </div>
+
+  <div class="quote-block">
+    <blockquote>"The only app that knows about your divorce proceedings, your salary negotiation, and your confrontation with your father — should run on your phone and nowhere else."</blockquote>
+    <cite>— Core design principle, Tough Talks</cite>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- TECH STACK -->
+<section class="section" id="tech">
+  <div class="section-label">Technical Architecture</div>
+  <h2 class="section-title">Built on<br><em>Gemma 4's full stack</em></h2>
+  <p class="section-body">Tough Talks uses every major capability in the Gemma 4 model family — multimodal input, audio processing, language generation, and edge deployment — making it a complete showcase of the platform.</p>
+
+  <div class="tech-stack">
+    <span class="tech-pill">Gemma 4 E2B — live audio monitoring</span>
+    <span class="tech-pill">Gemma 4 E4B — real-time whisper suggestions</span>
+    <span class="tech-pill">Gemma 4 27B — persona simulation &amp; debrief</span>
+    <span class="tech-pill">On-device audio transcription</span>
+    <span class="tech-pill">Sentiment &amp; prosody analysis</span>
+    <span class="tech-pill">Function calling — emotion radar API</span>
+    <span class="tech-pill">Longitudinal local storage — Talk DNA</span>
+    <span class="tech-pill">Multimodal — text + audio + optional vision</span>
+    <span class="tech-pill">Zero network dependency</span>
+    <span class="tech-pill">Android / Pixel deployment target</span>
+  </div>
+</section>
+
+<footer>
+  <p>Tough Talks · Gemma 4 Good Hackathon Concept · Built with Gemma 4 on-device · All processing local · Zero cloud dependency</p>
+</footer>
+
+<script>
+// INNOVATIONS DATA
+const innovations = [
+  {
+    number: "01", color: "#5A8AE0", tag: "Personalization",
+    tagBg: "rgba(90,138,224,0.12)", tagColor: "#5A8AE0",
+    title: "Talk DNA — Your Personal Communication Profile",
+    wow: "After 5 conversations: 'You use the phrase \"I just feel like\" before every vulnerable statement. It signals uncertainty before you've even made your point. Here are 3 stronger openings.'",
+    desc: "Over time, Gemma builds your personal Talk DNA — a map of your verbal patterns, habitual weaknesses, and communication strengths. Do you over-apologize? Hedge with filler phrases? Go silent when challenged? Get sarcastic under pressure? Talk DNA surfaces these patterns across all your conversations and tracks whether they're improving. It becomes the most honest feedback you've ever received about how you actually communicate."
+  },
+  {
+    number: "02", color: "#C9A84C", tag: "Intelligence",
+    tagBg: "rgba(201,168,76,0.12)", tagColor: "#C9A84C",
+    title: "The Person Vault — Build Models of the People in Your Life",
+    wow: "'Based on your mother's messages and your description of past conversations, she tends to deflect with guilt when she feels criticized. Lead with appreciation before the issue — she responds 70% better to that framing.'",
+    desc: "For each person you have recurring tough conversations with, Tough Talks builds a behavioral profile — their communication style, emotional triggers, what they respond well to, and what escalates them. You feed it their messages, voice recordings, or simply describe them. The profile deepens with each conversation you have through the app. Over months, Gemma understands your relationships better than any third party could."
+  },
+  {
+    number: "03", color: "#E05A5A", tag: "Strategy",
+    tagBg: "rgba(224,90,90,0.12)", tagColor: "#E05A5A",
+    title: "The Pre-Mortem — Prepare for the Worst Case",
+    wow: "'You said the worst outcome is they deny everything and turn it back on you. Here's a simulation of exactly that scenario — practice until it doesn't destabilize you.'",
+    desc: "Before any practice session, Tough Talks runs a structured pre-mortem: what's the worst realistic outcome of this conversation? What would break your resolve? What would you regret saying? Gemma then builds a simulation that targets those exact scenarios — not to scare you, but to inoculate you. Walking into a hard conversation having already survived the worst version of it changes everything."
+  },
+  {
+    number: "04", color: "#5ABA7A", tag: "Scenario Library",
+    tagBg: "rgba(90,186,122,0.12)", tagColor: "#5ABA7A",
+    title: "Conversation Blueprints — Templates for Common Tough Talks",
+    wow: "Select 'Ask for a raise' → Gemma pre-loads the most common objections ('budget is tight', 'let's revisit in 6 months', 'your peers are at the same level'), your market data prompt, and your Talk DNA weak spots — personalized and ready.",
+    desc: "A growing library of pre-built conversation blueprints covers the most universally feared tough talks: asking for a raise, ending a relationship, setting a boundary with a parent, confronting a friend's betrayal, giving critical feedback to a report, disclosing a mental health issue, asking for help. Each blueprint comes pre-loaded with the most common opponent responses, recommended opening lines, and known pitfalls — personalized with your Talk DNA."
+  },
+  {
+    number: "05", color: "#9B7AE0", tag: "Post-Conversation",
+    tagBg: "rgba(155,122,224,0.12)", tagColor: "#9B7AE0",
+    title: "The Aftermath — Compare Plan vs. Reality",
+    wow: "'You planned to raise the issue within the first 3 minutes. You waited 18 minutes. The conversation ended before you got to your main point. Here is the moment you had an opening you didn't take — at 7:42.'",
+    desc: "After a live conversation, Tough Talks compares what you planned to say with what actually happened — the gaps, the pivots, the moments of strength, and the moments you went off-script. It annotates the transcript with what worked and what didn't, and generates 3 things to do differently next time. Over months, your Aftermath library becomes a detailed record of your growth as a communicator."
+  },
+  {
+    number: "06", color: "#C9A84C", tag: "Relationship Health",
+    tagBg: "rgba(201,168,76,0.12)", tagColor: "#C9A84C",
+    title: "The Relationship Pulse — Track Connection Over Time",
+    wow: "'Your conversations with your partner have shifted in the last 6 weeks: the ratio of problem-discussion to positive exchange has inverted. Three of the last four conversations ended with an unresolved item. This may be worth addressing directly.'",
+    desc: "For relationships where you have multiple conversations over time, Tough Talks tracks the emotional arc — are conversations getting easier or harder? Are issues getting resolved or accumulating? Is there growth or a recurring loop? The Relationship Pulse is not couples therapy — it's a private, honest longitudinal mirror of how your most important relationships are actually doing."
+  },
+  {
+    number: "07", color: "#5A8AE0", tag: "Cultural Intelligence",
+    tagBg: "rgba(90,138,224,0.12)", tagColor: "#5A8AE0",
+    title: "Cultural Calibration — Communication Across Contexts",
+    wow: "Preparing to negotiate with a Japanese counterpart vs. a New York executive: Gemma adjusts the simulation's communication style, silence norms, indirect language patterns, and face-saving conventions — so you're not just prepared for the conversation, but for the culture.",
+    desc: "Communication norms vary dramatically across cultures, industries, and power dynamics. A direct challenge that works in one context is an insult in another. Silence that signals discomfort in one culture signals respect in another. Cultural Calibration lets you configure the simulation and live coaching to the specific cultural context of your conversation — making Tough Talks genuinely global."
+  }
+];
+
+const innovList = document.getElementById('innovations-list');
+innovations.forEach(innov => {
+  const item = document.createElement('div');
+  item.className = 'innovation-item';
+  item.innerHTML = `
+    <div class="innov-header">
+      <span class="innov-number">${innov.number}</span>
+      <span class="innov-color" style="background:${innov.color}"></span>
+      <span class="innov-title">${innov.title}</span>
+      <span class="innov-tag" style="background:${innov.tagBg};color:${innov.tagColor}">${innov.tag}</span>
+      <span class="innov-arrow">▼</span>
+    </div>
+    <div class="innov-body">
+      <div class="innov-wow">
+        <div class="innov-wow-label">Wow Moment</div>
+        <p class="innov-wow-text">${innov.wow}</p>
+      </div>
+      <p class="innov-desc">${innov.desc}</p>
+    </div>
+  `;
+  item.querySelector('.innov-header').addEventListener('click', () => {
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.innovation-item').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  });
+  innovList.appendChild(item);
+});
+
+// FLOW DATA
+const flowSteps = [
+  { n: "1", title: "Identify the conversation", desc: "You name the person, the issue, and what you want to achieve. Tough Talks checks if you have a Person Vault profile for them — if yes, it loads it. If not, it asks 5 quick questions to build a baseline." },
+  { n: "2", title: "Choose a Blueprint or go freeform", desc: "Pick from the Conversation Blueprint library (raise negotiation, relationship confrontation, etc.) or describe the situation in your own words. Gemma generates the simulation parameters." },
+  { n: "3", title: "Run the Pre-Mortem", desc: "Gemma presents the 3 most likely ways this conversation goes badly. You choose whether to simulate the hardest one first. This is optional but recommended — it's where the real preparation happens." },
+  { n: "4", title: "Practice rounds", desc: "As many rounds as you need. Each round ends with a debrief: where you gained ground, where you lost it, and one specific line to try differently. Your Talk DNA updates with new patterns." },
+  { n: "5", title: "Build your Conversation Plan", desc: "Gemma generates a lightweight 1-page plan: your opening line, your 3 key points, the 2 most likely objections with your responses, and your walk-away condition if needed." },
+  { n: "6", title: "Go live", desc: "Switch to Live Mode. Gemma listens in the background, tracking emotion radar, whispering prompts, and bookmarking key moments. You're present in the conversation — Tough Talks is the quiet coach in your ear." },
+  { n: "7", title: "The Aftermath debrief", desc: "Immediately after, Tough Talks generates your Aftermath: what was planned vs. what happened, the annotated transcript, 3 wins, 1 thing to fix, and an update to your Person Vault and Relationship Pulse." }
+];
+
+const flowTrack = document.getElementById('flow-track');
+flowSteps.forEach(step => {
+  const el = document.createElement('div');
+  el.className = 'flow-step';
+  el.innerHTML = `
+    <div class="flow-dot">${step.n}</div>
+    <div class="flow-content">
+      <h4>${step.title}</h4>
+      <p>${step.desc}</p>
+    </div>
+  `;
+  flowTrack.appendChild(el);
+});
+</script>
+
+
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"><template shadowrootmode="open"><style>
+      div.grammarly-desktop-integration {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select:none;
+        user-select:none;
+      }
+
+      div.grammarly-desktop-integration:before {
+        content: attr(data-content);
+      }
+    </style><div aria-label="grammarly-integration" role="group" class="grammarly-desktop-integration" data-content="{&quot;mode&quot;:&quot;limited&quot;,&quot;isActive&quot;:false,&quot;isUserDisabled&quot;:false}"></div></template></grammarly-desktop-integration></html>

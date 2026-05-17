@@ -21,6 +21,15 @@ Everything runs on one Gemma 4 multimodal model loaded in one uvicorn process. N
 
 ---
 
+## See it without running anything
+
+- **Watch the demo on YouTube** — https://youtu.be/vLpLSa11Qsw
+- **Demo video (local copy)** — [`docs/demo/Gemma4Good.mp4`](docs/demo/Gemma4Good.mp4)
+- **Offline Practice-flow capture** (a real Salary-Negotiation round, saved with all assets so it renders offline) — [`docs/demo/Tough Talks — App_Sallary Negotiation.html`](docs/demo/Tough%20Talks%20%E2%80%94%20App_Sallary%20Negotiation.html)
+- **Offline product-concept page** — [`docs/demo/Tough Talks — Product Concept.html`](docs/demo/Tough%20Talks%20%E2%80%94%20Product%20Concept.html)
+
+---
+
 ## Quick start — run the live demo
 
 The whole stack — model, FastAPI backend, frontend, public tunnel — boots from a single Colab notebook:
@@ -188,8 +197,11 @@ CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) installs the lightweig
 ## Hackathon submission
 
 - **Writeup**: [`docs/writeup.md`](docs/writeup.md)
+- **Demo video (YouTube)**: https://youtu.be/vLpLSa11Qsw
+- **Demo video (local)**: [`docs/demo/Gemma4Good.mp4`](docs/demo/Gemma4Good.mp4)
+- **Offline Practice-flow capture**: [`docs/demo/Tough Talks — App_Sallary Negotiation.html`](docs/demo/Tough%20Talks%20%E2%80%94%20App_Sallary%20Negotiation.html)
+- **Offline product-concept page**: [`docs/demo/Tough Talks — Product Concept.html`](docs/demo/Tough%20Talks%20%E2%80%94%20Product%20Concept.html)
 - **Live-demo notebook**: [`notebooks/phase6/step15_demo_recording.ipynb`](notebooks/phase6/step15_demo_recording.ipynb)
-- **Demo assets**: [`docs/demo/`](docs/demo/)
 - **Output contracts**: [`data/schemas/`](data/schemas/)
 - **Dev protocol**: [`docs/dev_protocol.md`](docs/dev_protocol.md)
 

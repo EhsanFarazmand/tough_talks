@@ -100,7 +100,9 @@ Gemma 4's real advantage in this domain is not raw intelligence — it's **persi
 ## Attachments
 
 - **GitHub:** https://github.com/EhsanFarazmand/tough_talks
+- **Demo video:** [`docs/demo/Gemma4Good.mp4`](demo/Gemma4Good.mp4)
+- **Offline Practice-flow capture (no install needed):** [`docs/demo/Tough Talks — App_Sallary Negotiation.html`](demo/Tough%20Talks%20%E2%80%94%20App_Sallary%20Negotiation.html)
+- **Offline product-concept page:** [`docs/demo/Tough Talks — Product Concept.html`](demo/Tough%20Talks%20%E2%80%94%20Product%20Concept.html)
 - **Live-demo notebook:** [`notebooks/phase6/step15_demo_recording.ipynb`](../notebooks/phase6/step15_demo_recording.ipynb)
-- **Demo video:** [`docs/demo/`](demo/)
 - **Output contracts (JSON schemas):** [`data/schemas/`](../data/schemas/)
 - **Development protocol:** [`docs/dev_protocol.md`](dev_protocol.md)
