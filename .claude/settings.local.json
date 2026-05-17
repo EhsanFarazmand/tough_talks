@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"import json; json.load\\(open\\('d:/py_1/Git_repo/tough_talks/notebooks/phase4/step09_debrief.ipynb', 'r', encoding='utf-8'\\)\\); print\\('JSON OK'\\)\")"
-    ]
-  }
-}
