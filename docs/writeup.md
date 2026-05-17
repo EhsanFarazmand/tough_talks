@@ -100,9 +100,9 @@ Gemma 4's real advantage in this domain is not raw intelligence — it's **persi
 ## Attachments
 
 - **GitHub:** https://github.com/EhsanFarazmand/tough_talks
-- **Demo video:** [`docs/demo/Gemma4Good.mp4`](demo/Gemma4Good.mp4)
-- **Offline Practice-flow capture (no install needed):** [`docs/demo/Tough Talks — App_Sallary Negotiation.html`](demo/Tough%20Talks%20%E2%80%94%20App_Sallary%20Negotiation.html)
-- **Offline product-concept page:** [`docs/demo/Tough Talks — Product Concept.html`](demo/Tough%20Talks%20%E2%80%94%20Product%20Concept.html)
+- **Demo video:** [`docs/demo/Gemma4Good.mp4`](https://youtu.be/vLpLSa11Qsw)
+- **Offline Practice-flow capture:** [one-click render](https://htmlpreview.github.io/?https://github.com/EhsanFarazmand/tough_talks/blob/main/docs/demo/Tough%20Talks%20%E2%80%94%20App_Sallary%20Negotiation.html)
+- **Offline product-concept page:** [one-click render](https://htmlpreview.github.io/?https://github.com/EhsanFarazmand/tough_talks/blob/main/docs/demo/Tough%20Talks%20%E2%80%94%20Product%20Concept.html)
 - **Live-demo notebook:** [`notebooks/phase6/step15_demo_recording.ipynb`](../notebooks/phase6/step15_demo_recording.ipynb)
 - **Output contracts (JSON schemas):** [`data/schemas/`](../data/schemas/)
 - **Development protocol:** [`docs/dev_protocol.md`](dev_protocol.md)
