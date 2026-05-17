@@ -94,7 +94,6 @@ from .debrief import count_user_turns, format_practice_transcript
 from .generation import GenerationConfig, chat
 from .parsing import JsonParseError, parse_json
 from .persona_sim import (
-    ALLOWED_RESISTANCE_TYPES,
     DEFAULT_USER_GOAL,
     _normalize_resistance_type,
     format_persona_profile_block,
